@@ -1,0 +1,49 @@
+Meeting and subsequent brainstorm 
+Plan A
+
+Link from Sav: https://www.ebi.ac.uk/ebisearch/search?db=nucleotideSequences&sortignorenull=true&query=alzheimers%20gut%20microbiome&size=15 
+
+Covid and Infant Microbiome
+https://www.ebi.ac.uk/ena/browser/view/PRJNA1031773?show=orcid-links 
+https://www.tandfonline.com/doi/full/10.1080/19490976.2024.2443117#d1e585 
+
+Alzheimers
+The current paradigm of Alzheimer Disease (AD) pathology builds on a progression from cognitively normal status, to cognitively normal with biomarker evidence of disease (preclinical AD), to symptomatic AD characterized by both abnormal biomarker levels and cognitive impairment. Recent work has demonstrated that the gut microbiomes of symptomatic AD patients have distinct taxonomic compositions compared to healthy cognitively normal controls. However, knowledge about changes in the gut microbiome prior to the onset of symptomatic AD is limited. In this cross-sectional study we compared the taxonomic composition, microbial functional potential, and abundances of metagenome-assembled genomes (MAGs) in a cohort of 43 cognitively normal individuals with preclinical AD and 50 cognitively normal individuals without evidence of AD. An observation of gut microbiome correlates of preclinical AD neuropathology has the potential to improve our understanding of AD etiology, enable the identification of gut-derived biomarkers of AD or AD risk, and inform the development of therapeutic interventions.
+https://www.ebi.ac.uk/ena/browser/view/PRJNA798058
+Literature: https://www.science.org/doi/10.1126/scitranslmed.abo2984 
+
+Effect of paternal stress on offspring
+Adverse parental environments prior to conception have the potential to modify the phenotype of offspring. We studied acute perturbations of the gut microbiota in male mice with regard to the susceptibility of their offspring to detrimental phenotypes. Our study identifies a major inter-generational effect of paternal microbiome perturbation as part of a key "gut-germline axis" in mammals.
+https://www.ebi.ac.uk/ena/browser/view/PRJEB43500
+
+Link between gut microbiome and prosocial behaviour in rats along with effect of early life stress 
+Prosocial behavior is associated with positive health outcomes, but the underlying biological mechanisms remain unclear, especially regarding the role of the gut microbiome. Using the ‘Helping Behavior Test’, we evaluated prosocial tendencies in rats. We also investigated differences in gut microbiome profiles between prosocial and non-prosocial rats in two experimental settings. In the first experiment, we examined the relationship between nucleus accumbens mRNA expression and microbiome composition in the context of helping in naïve rats. Based on these results, an in vitro study tested the effects of various additives on the taxon Eubacterium ventriosum. In the second experiment, we investigated the effects of early life stress (maternal separation) on prosocial behavior and microbiome profiles. We found compositional differences in the microbiome according to prosocial behavior. These taxa were also associated with several genes and pathways, including immune markers. Additionally, we observed distinct microbiome profiles between the control and three stress groups. Interestingly, the prosocial rats from the stress groups differed from each other, mainly in the relative abundance of the Firmicutes and Bacteroidetes phyla, indicating distinct microbiome changes following different stress exposures. Overall, these detailed analyses provide insights into the relationships among prosocial behavior, the gut-brain-microbiota axis, and early life experiences.
+https://www.ebi.ac.uk/ena/browser/view/PRJEB76577
+
+Sex-specific differences of social isolation on rat microbiome
+Social isolation (SI) is an established rat model of chronic stress. We applied this to the stress-sensitive Wistar Kyoto (WKY) strain to explore brain-to-gut interactions associated with mood. Whether SI stress-induced behavioural changes are sex-specific or if they affect the microbiome in WKY is unknown. We hypothesised individually housed (IH) animals would be more anxious than pair housed (PH), with sex differences. Male and female rats were either IH or PH from 70-112 days old and behaviour was assessed in modified open field (OFTmod), elevated plus maze (EPM) and novel object recognition (NOR) tests. Caecal content DNA was analysed by shotgun metagenome sequencing postmortem.
+https://www.ebi.ac.uk/ena/browser/view/PRJNA1127265
+
+
+
+Plan B: Back up research questions in case A doesn’t work
+Sources: Existing data
+Interesting datasets:
+Autoimmune neurodegenerative disease: Multiple Sclerosis (MS) Dataset (Student-sourced dataset!)
+This is a huge dataset with 1708 samples collected from individuals around the world focused on the role of multiple sclerosis on the microbiome. It contains a rich amount of metadata (labelled ms_metadata). This dataset was brought in Jan-Apr 2024 by a student team that was interested in MS studies. They only used a small subset of the data (paper below) focused on the role of eczema on the microbiome. There are many novel projects that can probably come out of this dataset. 
+Research question: 
+Do birth method affect MS susceptibility outcome in MS patients? (correlation between birth method, microbial diversity, and disease outcome)
+The paper demonstrated that GA and natalizumab reduced Bacteroides uniformis, which is associated with MS and played a protective role in diabetes. The question is whether B. uniformis increased presence reduce the chance of Type 2 diabetes in MS patients
+Neurodegenerative disease: Familial Dysautonomia (Student-sourced dataset!)
+This dataset was actually found by a team of MICB 475 students last term! They found out that the authors had collected data from humans and mice but only published finding on their human dataset even though their mouse data is very extensive and rich. Here we have the mouse-based dataset exploring the effects of Familial Dysautonomia, a rare genetic neurological disease, on the gut microbiome. 
+Research question: 
+Do the mouse and human data correlate and yield similar gut microbiome dysbiosis? We hypothesize that it should correlate in order to prove that FD in mouse models are valid to use to test and study this disease.
+
+Gastric cancer
+Gut microbiome in relation to the changes of soil microbiome over the years and its impact on stomach cancer susceptibility
+Investigating the changes in the composition of the soil and how that affects human gut microbiome. Does the changes in soil have increased susceptibility to stomach cancer?
+
+Datasets:
+Human gut microbiome dataset https://ftp.ebi.ac.uk/pub/databases/metagenomics/mgnify_genomes/human-gut/ 
+Soil dataset from Canvas
+

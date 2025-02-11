@@ -1,4 +1,4 @@
-#Meeting to discuss research question and brainstorm aims
+# Meeting to discuss research question and brainstorm aims
 ## Meeting Agenda:
 ### Logistics:
   * Use more GitHub

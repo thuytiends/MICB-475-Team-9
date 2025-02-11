@@ -1,16 +1,16 @@
 
-Possible research questions approved by Evelyn and Hans:
+# Possible research questions approved by Evelyn and Hans:
 1. Anemia and diets supplement
 2. Dorm and depression => caveat: merging the data is a challenge
-  pProblem: depression dataset is for older age while dorm is 
+   Problem: depression dataset is for older age while dorm is 
 3. HIV datasets - social aspects, 
 4. Diabetes and BMI how comparable they are 
 
 
-Chosen project/metadata: HIV 
-Next week: 3-4 aims, research quesition, outline of analyses what you would run 
+# Chosen project/metadata: HIV 
+## Next week: 3-4 aims, research quesition, outline of analyses what you would run 
 e.g. diversity metrics alpha and beta 
-Next week meeting: Zoom
+## Next week meeting: Zoom
 Housekeeping: guidelines and expectations of proposal is on Canvas
-  Datasets - expect the 
+  Datasets 
   team server credentials - to do project, archive qza, qzv and put it on Github to not lose everything 

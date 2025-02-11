@@ -4,9 +4,7 @@
 tentative
 
 ## Table of Content 
-[Meeting minutes]/(#meeting-minutes-and-agenda)
-[Lab notebook]/(### Lab Notebook)
-[Finalized Codes)/(### Finalized Codes)
+[Meeting minutes]/
 
 
 ### Meeting Minutes and Agenda

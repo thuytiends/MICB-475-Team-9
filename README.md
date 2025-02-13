@@ -13,7 +13,7 @@
 
 ## Meeting Minutes and Agenda
 ### February ⛄
-[Feb 1st](/Meeting_minutes/Feb-1st.md) | [Feb 7th](/Meeting_minutes/Feb-7th.md) | [Feb 11th](/Meeting_minutes/Feb-11th.md)
+[Feb 1st](/Meeting_minutes/2025-02-01.md) | [Feb 7th](/Meeting_minutes/2025-02-07.md) | [Feb 11th](/Meeting_minutes/2025-02-11.md) | [Feb 13th](/Meeting_minutes/2025-02-13.md)
 ### March 🌸
 
 ### April 💻

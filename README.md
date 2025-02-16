@@ -20,6 +20,39 @@
 
 ## Lab Notebook 
 
+QIIME2 Analysis
+
+- Create a directory for the project:
+mkdir HIV
+
+- Import a dataset using a manifest file:
+qiime tools import \
+  --type "SampleData[SequencesWithQuality]" \
+  --input-format SingleEndFastqManifestPhred33V2 \
+  --input-path /mnt/datasets/project_2/hiv/hiv_manifest.tsv \
+  --output-path demux_seqs.qza
+
+- Create visualization of demultiplexed samples:
+qiime demux summarize \
+  --i-data demux_seqs.qza \
+  --o-visualization demux.qzv
+
+- Determine ASVs with DADA2
+qiime dada2 denoise-single \
+  --i-demultiplexed-seqs demux_seqs.qza \
+  --p-trim-left 0 \
+  --p-trunc-len 251 \
+  --o-representative-sequences rep-seqs.qza \
+  --o-table table.qza \
+  --o-denoising-stats stats.qza
+
+
+
+
+
+
+
+
 ## Finalized Codes
 
 

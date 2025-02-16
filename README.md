@@ -37,7 +37,13 @@ qiime demux summarize \
   --i-data demux_seqs.qza \
   --o-visualization demux.qzv
 
+- Running jobs in the background
+screen -S Susana_243
+screen -S tien-denoise
+
 - Determine ASVs with DADA2
+Truncating with 251 nts:
+
 qiime dada2 denoise-single \
   --i-demultiplexed-seqs demux_seqs.qza \
   --p-trim-left 0 \
@@ -46,11 +52,43 @@ qiime dada2 denoise-single \
   --o-table table.qza \
   --o-denoising-stats stats.qza
 
+Truncating with 243 nts:
+nohup qiime dada2 denoise-single \
+  --i-demultiplexed-seqs demux_seqs.qza \
+  --p-trim-left 0 \
+  --p-trunc-len 243 \
+  --o-representative-sequences rep-seqs.qza \
+  --o-table table.qza \
+  --o-denoising-stats stats.qza > dada2_output.log 2>&1 &
+
+- Visualize DADA2 stats
+qiime metadata tabulate \
+  --m-input-file 243_stats.qza \
+  --o-visualization 243_stats.qzv
+
+qiime metadata tabulate \
+  --m-input-file stats251.qza \
+  --o-visualization stats251.qzv
+
+- Visualize ASVs stats
+qiime feature-table summarize \
+  --i-table 243_table.qza \
+  --o-visualization 243_table.qzv \
+  --m-sample-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv
+
+  qiime feature-table summarize \
+  --i-table table251.qza \
+  --o-visualization table251.qzv \
+  --m-sample-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv
 
 
+qiime feature-table tabulate-seqs \
+  --i-data 243_rep-seqs.qza \
+  --o-visualization 243_rep-seqs.qzv
 
-
-
+  qiime feature-table tabulate-seqs \
+  --i-data rep-seqs251.qza \
+  --o-visualization rep-seqs251.qzv
 
 
 ## Finalized Codes

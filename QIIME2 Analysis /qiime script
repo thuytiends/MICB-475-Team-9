@@ -48,7 +48,7 @@ qiime metadata tabulate \
   --m-input-file stats251.qza \
   --o-visualization stats251.qzv
 
-- Visualize ASVs stats
+- Convert files to visualize ASVs stats:
 qiime feature-table summarize \
   --i-table 243_table.qza \
   --o-visualization 243_table.qzv \
@@ -67,4 +67,36 @@ qiime feature-table tabulate-seqs \
   qiime feature-table tabulate-seqs \
   --i-data rep-seqs251.qza \
   --o-visualization rep-seqs251.qzv
+
+
+- Train classifier:
+
+qiime feature-classifier extract-reads \ 
+  --i-sequences /mnt/datasets/silva_ref_files/silva-138-99-seqs.qza \
+  --p-f-primer GTGCCAGCMGCCGCGGTAA \
+  --p-r-primer GGACTACHVGGGTWTCTAAT \
+  --p-trunc-len 243 \
+  --o-reads ref-seqs-trimmed.qza
+
+qiime feature-classifier fit-classifier-naive-bayes \
+  --i-reference-reads ref-seqs-trimmed.qza \
+  --i-reference-taxonomy /mnt/datasets/silva_ref_files/silva-138-99-tax.qza \
+  --o-classifier trained_243nt_silva_classifier.qza
+
+- Assign taxonomy to your reads (rep-seqs.qza) with the classifier generated:
+
+qiime feature-classifier classify-sklearn \
+  --i-classifier trained_243nt_silva_classifier.qza \
+  --i-reads 243_rep-seqs.qza \
+  --o-classification 243_taxonomy.qza
+
+
+- Generate a tree for phylogenetic diversity analyses:
+qiime phylogeny align-to-tree-mafft-fasttree \
+  --i-sequences 243_rep-seqs.qza \
+  --o-alignment 243_aligned-rep-seqs.qza \
+  --o-masked-alignment 243_masked-aligned-rep-seqs.qza \
+  --o-tree 243_unrooted-tree.qza \
+  --o-rooted-tree 243_rooted-tree.qza 
+
 

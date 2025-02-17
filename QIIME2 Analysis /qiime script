@@ -90,13 +90,71 @@ qiime feature-classifier classify-sklearn \
   --i-reads 243_rep-seqs.qza \
   --o-classification 243_taxonomy.qza
 
+qiime metadata tabulate \
+  --m-input-file 243_taxonomy.qza \
+  --o-visualization 243_taxonomy.qzv
+
+qiime taxa barplot \
+  --i-table 243_table.qza \
+  --i-taxonomy 243_taxonomy.qza \
+  --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
+  --o-visualization taxa-bar-plots.qzv
+
+- Taxonomy-based filtering
+qiime taxa filter-table \
+  --i-table 243_table.qza \
+  --i-taxonomy 243_taxonomy.qza \
+  --p-exclude mitochondria,chloroplast \
+  --o-filtered-table table-no-mitochondria-no-chloroplast.qza
+
+qiime feature-table summarize \
+  --i-table table-no-mitochondria-no-chloroplast.qza \
+  --o-visualization CORRECT_table-no-mitochondria-no-chloroplast.qzv \
+  --m-sample-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv
 
 - Generate a tree for phylogenetic diversity analyses:
+
 qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences 243_rep-seqs.qza \
   --o-alignment 243_aligned-rep-seqs.qza \
   --o-masked-alignment 243_masked-aligned-rep-seqs.qza \
   --o-tree 243_unrooted-tree.qza \
   --o-rooted-tree 243_rooted-tree.qza 
+
+- Alpha-rarefaction curve:
+
+qiime diversity alpha-rarefaction \
+  --i-table 243_table.qza \
+  --i-phylogeny 243_rooted-tree.qza \
+  --p-max-depth 89000 \
+  --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
+  --o-visualization alpha-rarefaction.qzv
+
+
+- Determining alpha- and beta-diversity metrics:
+
+qiime diversity core-metrics-phylogenetic \
+  --i-phylogeny 243_rooted-tree.qza \
+  --i-table CORRECT_table-no-mitochondria-no-chloroplast.qza \
+  --p-sampling-depth 13483 \
+  --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
+  --output-dir core-metrics-results
+
+
+- Calculate alpha-group-significance
+
+To visualize faith-pd-group-significance:
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/faith_pd_vector.qza \
+  --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
+  --o-visualization core-metrics-results/faith-pd-group-significance.qzv
+
+To visualize evenness-group-significance:
+
+qiime diversity alpha-group-significance \
+  --i-alpha-diversity core-metrics-results/evenness_vector.qza \
+  --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
+  --o-visualization core-metrics-results/evenness-group-significance.qzv
 
 

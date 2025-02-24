@@ -1,7 +1,7 @@
 # MICB 475: Data Science Research in Microbiology and Immunology
 
 ## Timeline
-### yay we got a plan!
+### Yay we got a plan 😄!
 <img src= "/Team proposal/weekly timeline.png">
 <br><br> 
 

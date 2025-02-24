@@ -27,7 +27,10 @@
 
 ## Finalized Codes
 ### QIIME2
- * Initial data cleaning
+ * [Data cleaning and processing](/QIIME2 Analysis /QIIME2 Data Processing Script)
  * Aim 3: PICRUST2 Analysis
 ### RStudio
+ * Aim 1: .R or .Rmd files
+ * Aim 2: above
+ * Aim 3: above
 

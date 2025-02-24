@@ -6,8 +6,10 @@
 <br><br> 
 
 ### In case you're wondering how the team is doing:
-<img src= 4cd6eaa599851725aa5a195d162fb20d.gif, width ="500">
-<img src="https://gist.github.com/fzn0x/03809a76fdb58b39f65a84f33e6d60d2.js">
+
+<img src="https://user-images.githubusercontent.com/74038190/212897782-96581536-54a0-4b87-87b4-5e55f95e8a8b.gif" width="300">
+<br><br>
+
 
 ## Table of Content 🔖
   * [Meeting minutes](#meeting-minutes-and-agenda)

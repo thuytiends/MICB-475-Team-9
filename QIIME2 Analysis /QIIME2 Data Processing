@@ -1,9 +1,9 @@
 QIIME2 Analysis
 
-- Create a directory for the project:
+# Create a directory for the project:
 mkdir HIV
 
-- Import a dataset using a manifest file:
+# Import a dataset using a manifest file:
 qiime tools import \
   --type "SampleData[SequencesWithQuality]" \
   --input-format SingleEndFastqManifestPhred33V2 \
@@ -39,7 +39,7 @@ nohup qiime dada2 denoise-single \
   --o-table table.qza \
   --o-denoising-stats stats.qza > dada2_output.log 2>&1 &
 
-- Visualize DADA2 stats
+# Visualize DADA2 stats
 qiime metadata tabulate \
   --m-input-file 243_stats.qza \
   --o-visualization 243_stats.qzv
@@ -48,7 +48,7 @@ qiime metadata tabulate \
   --m-input-file stats251.qza \
   --o-visualization stats251.qzv
 
-- Convert files to visualize ASVs stats:
+# Convert files to visualize ASVs stats:
 qiime feature-table summarize \
   --i-table 243_table.qza \
   --o-visualization 243_table.qzv \
@@ -69,7 +69,7 @@ qiime feature-table tabulate-seqs \
   --o-visualization rep-seqs251.qzv
 
 
-- Train classifier:
+# Train classifier:
 
 qiime feature-classifier extract-reads \ 
   --i-sequences /mnt/datasets/silva_ref_files/silva-138-99-seqs.qza \
@@ -121,7 +121,7 @@ qiime phylogeny align-to-tree-mafft-fasttree \
   --o-tree 243_unrooted-tree.qza \
   --o-rooted-tree 243_rooted-tree.qza 
 
-- Alpha-rarefaction curve:
+# Alpha-rarefaction curve:
 
 qiime diversity alpha-rarefaction \
   --i-table 243_table.qza \
@@ -131,7 +131,7 @@ qiime diversity alpha-rarefaction \
   --o-visualization alpha-rarefaction.qzv
 
 
-- Determining alpha- and beta-diversity metrics:
+# Determining alpha- and beta-diversity metrics:
 
 qiime diversity core-metrics-phylogenetic \
   --i-phylogeny 243_rooted-tree.qza \
@@ -141,7 +141,7 @@ qiime diversity core-metrics-phylogenetic \
   --output-dir core-metrics-results
 
 
-- Calculate alpha-group-significance
+# Calculate alpha-group-significance
 
 To visualize faith-pd-group-significance:
 

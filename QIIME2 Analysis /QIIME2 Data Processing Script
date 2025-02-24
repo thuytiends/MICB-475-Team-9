@@ -10,16 +10,16 @@ qiime tools import \
   --input-path /mnt/datasets/project_2/hiv/hiv_manifest.tsv \
   --output-path demux_seqs.qza
 
-- Create visualization of demultiplexed samples:
+# Create visualization of demultiplexed samples:
 qiime demux summarize \
   --i-data demux_seqs.qza \
   --o-visualization demux.qzv
 
-- Running jobs in the background
+# Running jobs in the background
 screen -S Susana_243
 screen -S tien-denoise
 
-- Determine ASVs with DADA2
+# Determine ASVs with DADA2
 Truncating with 251 nts:
 
 qiime dada2 denoise-single \
@@ -83,7 +83,7 @@ qiime feature-classifier fit-classifier-naive-bayes \
   --i-reference-taxonomy /mnt/datasets/silva_ref_files/silva-138-99-tax.qza \
   --o-classifier trained_243nt_silva_classifier.qza
 
-- Assign taxonomy to your reads (rep-seqs.qza) with the classifier generated:
+# Assign taxonomy to your reads (rep-seqs.qza) with the classifier generated:
 
 qiime feature-classifier classify-sklearn \
   --i-classifier trained_243nt_silva_classifier.qza \
@@ -100,7 +100,7 @@ qiime taxa barplot \
   --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
   --o-visualization taxa-bar-plots.qzv
 
-- Taxonomy-based filtering
+# Taxonomy-based filtering
 qiime taxa filter-table \
   --i-table 243_table.qza \
   --i-taxonomy 243_taxonomy.qza \
@@ -112,7 +112,7 @@ qiime feature-table summarize \
   --o-visualization CORRECT_table-no-mitochondria-no-chloroplast.qzv \
   --m-sample-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv
 
-- Generate a tree for phylogenetic diversity analyses:
+# Generate a tree for phylogenetic diversity analyses:
 
 qiime phylogeny align-to-tree-mafft-fasttree \
   --i-sequences 243_rep-seqs.qza \

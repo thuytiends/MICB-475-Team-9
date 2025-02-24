@@ -5,6 +5,10 @@
 <img src= "/Team proposal/weekly timeline.png">
 <br><br> 
 
+### In case you're wondering how the team is doing:
+<img src= 4cd6eaa599851725aa5a195d162fb20d.gif, width ="500">
+<img src="https://gist.github.com/fzn0x/03809a76fdb58b39f65a84f33e6d60d2.js">
+
 ## Table of Content 🔖
   * [Meeting minutes](#meeting-minutes-and-agenda)
   * [Lab notebook](#lab-notebook)
@@ -19,7 +23,7 @@
 ### April 💻
 
 ## Lab Notebook 
- * LN01 - QIIME2 Demultiplexing
+ * [LN01](/Lab-notebook/LN01.md) - QIIME2 Demultiplexing
  * LN02 - QIIME2 Denoising and Clustering
  * LN03 - QIIME2 Taxonomic Analysis
  * LN04 - QIIME2 Taxonomic Analysis
@@ -27,7 +31,7 @@
 
 ## Finalized Codes
 ### QIIME2
- * [Data cleaning and processing](/QIIME2 Analysis /QIIME2 Data Processing Script)
+ * [Data cleaning and processing](/QIIME2-Analysis/QIIME2-Data-Processing-Script.txt) 
  * Aim 3: PICRUST2 Analysis
 ### RStudio
  * Aim 1: .R or .Rmd files

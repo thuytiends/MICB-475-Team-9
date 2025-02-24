@@ -135,11 +135,10 @@ qiime diversity alpha-rarefaction \
 
 qiime diversity core-metrics-phylogenetic \
   --i-phylogeny 243_rooted-tree.qza \
-  --i-table CORRECT_table-no-mitochondria-no-chloroplast.qza \
-  --p-sampling-depth 13483 \
+  --i-table table-no-mitochondria-no-chloroplast.qza \
+  --p-sampling-depth 12082 \
   --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
-  --output-dir core-metrics-results
-
+  --output-dir 12082-core-metrics-results
 
 # Calculate alpha-group-significance
 

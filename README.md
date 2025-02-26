@@ -25,11 +25,11 @@
 ### April 💻
 
 ## Lab Notebook 
- * [LN01](Lab-notebook/LN01.md) - QIIME2 Demultiplexing
+ * [LN01](/Lab-notebook/LN01.md) - QIIME2 Demultiplexing
  * LN02 - QIIME2 Denoising and Clustering
  * LN03 - QIIME2 Taxonomic Analysis
- * LN04 - QIIME2 Taxonomic Analysis
- * LN05 - 
+ * LN04 - QIIME2
+ * LN05 - RStudio Alpha and Beta Analysis for Labor Type
 
 ## Finalized Codes
 ### QIIME2

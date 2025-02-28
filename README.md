@@ -2,7 +2,7 @@
 ## Reminder for team: When creating a folder/sub-folder, add -/_ in between space (e.g. Lab-notebook). Github doesn't recognize "Lab notebook" and you won't be able to link documents from there
 ## Timeline
 ### Yay we got a plan 😄!
-<img src= "/Team proposal/weekly timeline.png">
+<img src= "/Team-proposal/weekly timeline.png">
 <br><br> 
 
 ### In case you're wondering how the team is doing:

@@ -156,4 +156,19 @@ qiime diversity alpha-group-significance \
   --m-metadata-file /mnt/datasets/project_2/hiv/hiv_metadata.tsv \
   --o-visualization core-metrics-results/evenness-group-significance.qzv
 
+#Export to RStudio
 
+#export taxonomy
+qiime tools export \
+--input-path /HIV/243_taxonomy.qza \
+--output-path taxonomy_export 
+
+#export feature-table.txt
+qiime tools export \
+--input-path /HIV/243_table.qza \
+--output-path table_export 
+
+#export rooted tree 
+qiime tools export \
+--input-path /HIV/243_rooted-tree.qza \
+--output-path rooted_tree_expor

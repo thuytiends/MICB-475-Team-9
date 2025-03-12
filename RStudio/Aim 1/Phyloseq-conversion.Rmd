@@ -1,0 +1,120 @@
+---
+title: "Alpha-beta-labor-type"
+author: "Tien Do"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Convert data into phyloseq object, codes are taken from Canvas module
+```{r echo = FALSE }
+library(tidyverse)
+library(phyloseq)
+library(ape)
+library(vegan)
+library(ggplot2)
+```
+
+```{r} 
+metafp <- "../QIIME2 analysis/hiv_metadata.tsv" #import metadata, otu table, taxonomy, and phylo tree
+meta <- read_delim(metafp, delim="\t")
+otufp <- "../QIIME2 analysis/table-hiv.txt"
+otu <- read_delim(file = otufp, delim="\t", skip=1)
+
+taxfp <- "../QIIME2 analysis/taxonomy.tsv"
+tax <- read_delim(taxfp, delim="\t")
+
+phylotreefp <- "../QIIME2 analysis/tree.nwk"
+phylotree <- read.tree(phylotreefp)
+```
+
+
+#### Format OTU table ####
+# OTU tables should be a matrix
+# with rownames and colnames as OTUs and sampleIDs, respectively
+# Note: tibbles do not allow rownames so if you imported with read_delim, change back
+```{r}
+# save everything except first column (OTU ID) into a matrix
+otu_mat <- as.matrix(otu[,-1])
+# Make first column (#OTU ID) the rownames of the new matrix
+rownames(otu_mat) <- otu$`#OTU ID`
+# Use the "otu_table" function to make an OTU table
+OTU <- otu_table(otu_mat, taxa_are_rows = TRUE) 
+class(OTU)
+```
+#### Format sample metadata ####
+```{r}
+# Save everything except sampleid as new data frame
+samp_df <- as.data.frame(meta[,-1])
+# Make sampleids the rownames
+rownames(samp_df)<- meta$'sample-id'
+# Make phyloseq sample data with sample_data() function
+SAMP <- sample_data(samp_df)
+class(SAMP)
+```
+
+#### Formatting taxonomy ####
+
+```{r}
+# Convert taxon strings to a table with separate taxa rank columns
+tax_mat <- tax %>% select(-Confidence)%>%
+  separate(col=Taxon, sep="; "
+           , into = c("Domain","Phylum","Class","Order","Family","Genus","Species")) %>%
+  as.matrix() # Saving as a matrix
+# Save everything except feature IDs 
+tax_mat <- tax_mat[,-1]
+# Make sampleids the rownames
+rownames(tax_mat) <- tax$`Feature ID`
+# Make taxa table
+TAX <- tax_table(tax_mat)
+class(TAX)
+```
+
+
+#### Create phyloseq object ####
+
+```{r}
+# Merge all into a phyloseq object
+hiv <- phyloseq(OTU, SAMP, TAX, phylotree)
+```
+
+#### Looking at phyloseq object #####
+
+```{r}
+# View components of phyloseq object with the following commands
+otu_table(hiv)
+sample_data(hiv)
+tax_table(hiv)
+phy_tree(hiv)
+```
+
+######### ANALYZE ##########
+```{r}
+# Remove non-bacterial sequences, if any
+hiv_filt <- subset_taxa(hiv,  Domain == "d__Bacteria" & Class!="c__Chloroplast" & Family !="f__Mitochondria")
+# Remove ASVs that have less than 5 counts total
+hiv_filt_nolow <- filter_taxa(hiv_filt, function(x) sum(x)>5, prune = TRUE)
+# Remove samples with less than 100 reads
+hiv_filt_nolow_samps <- prune_samples(sample_sums(hiv_filt_nolow)>100, hiv_filt_nolow)
+# Remove samples where month is na
+hiv_final <- subset_samples(hiv_filt_nolow_samps, !is.na(month) )
+```
+
+```{r}
+# Rarefy samples
+# rngseed sets a random number. If you want to reproduce this exact analysis, you need
+# to set rngseed the same number each time
+# t transposes the table to use rarecurve function
+# cex decreases font size
+rarecurve(t(as.data.frame(otu_table(hiv_final))), cex=0.1)
+hiv_rare <- rarefy_even_depth(hiv_final, rngseed = 1, sample.size = 12082)
+```
+
+##### Saving #####
+```{r}
+save(hiv_final, file="hiv_final.RData")
+save(hiv_rare, file="hiv_rare.RData")
+```

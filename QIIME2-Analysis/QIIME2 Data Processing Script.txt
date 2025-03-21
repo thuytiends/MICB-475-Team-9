@@ -172,3 +172,45 @@ qiime tools export \
 qiime tools export \
 --input-path /HIV/243_rooted-tree.qza \
 --output-path rooted_tree_expor
+
+####PICRUSt2 analysis####
+
+#Filter the table.qza to remove all the features with 5 or lower counts
+qiime feature-table filter-features \
+--i-table 243_table.qza \
+--p-min-frequency 5 \
+--o-filtered-table 243_feature-frequency-filtered-table.qza
+
+qiime tools export \
+  --input-path 243_feature-frequency-filtered-table.qza \
+  --output-path 243_filtered_exported_table
+
+
+biom convert \
+  -i 243_filtered_exported_table/feature-table.biom \
+  -o 243_filtered_exported_table/feature_table.tsv \
+  --to-tsv
+
+
+qiime picrust2 full-pipeline \
+  --i-table 243_feature-frequency-filtered-table.qza \
+  --i-seq 243_rep-seqs.qza \
+  --output-dir q2-picrust2_output \
+  --p-placement-tool sepp \
+  --p-hsp-method pic \
+  --p-max-nsti 2 \
+  --verbose
+
+# Convert the output files to human readable files
+
+qiime tools export \
+  --input-path HIV/q2-picrust2_output/pathway_abundance.qza \
+  --output-path pathabun_exported
+
+biom convert \
+   -i pathabun_exported/feature-table.biom \
+   -o pathabun_exported/pathway_abundance.tsv \
+   --to-tsv
+
+
+

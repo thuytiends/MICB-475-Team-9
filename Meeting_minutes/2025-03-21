@@ -1,0 +1,41 @@
+*Agenda
+- discussion of Aim 3
+
+Meeting minutes
+- Can average z score but not ideal for a heatmap 
+- heatmap for labor and non-labor
+--> cannot make any conclusions
+--> this will be a figure - Hans along with the DESeq plot
+---> Steven: no conclusion, we see no significant difference between the groups
+--> significant comparing appearance rate, it is the number of appearance
+-------> Steven: there is a significance different in the appearance rate between labor and non-labor
+------------> biological does not appear very strong but significantly they are different
+-----------------> But they are some that are very overrepresented 
+
+- Age group patients 
+--> Hans: why the bar plot with pathways (from savitha) is pvalue instead of z value
+-----> Savitha: cuz it is log2foldchange
+-----> Hans: only take the log2foldchange of above and below (-1.5 or above 1.5) OR 1 
+---------> it is good; dont need to have it colored by p value
+------------->Hans: remove p-value and only keep the top 10 upregulated and downregulated
+
+
+- HIV positive only
+-----> only look at HIV positive patient
+-----> eg. labor category, this bacteria is upregulated and if it is beneficial to the patient
+
+Figures: try to workout with the layout that is all consistent and can see the text 
+element text size 16 (for axis text), 18 for axis title
+- dont overcrowd one slide with figures
+- should be 1min per slide
+
+
+- Education
+----> how higher education are commonly have downregulated with prevotella 
+----> Hans: need to think outside of education; eg. grinding more because of the job that you do, then cannot eat due to time crunch; dont think that just because someone went to higher education we could assume
+----> Steven: the consistent observation is that prevotella is downregulated in primary and secondary patients is an interesting result and in the discussion and further investigation with control of confounding variables
+----> Hans: look for literature previous studies if they have done studies on this; microbes dont cause HIV; can always include education negative in the supplementary;
+--------> can reference in the results the supplementary figures but there is no limit; still need caption
+------->Tien: prevotella is associated to type 1 diabetes but it is because of genetics
+--->Prevotella 1 and prevotella 2; it is probably because it is two species but can Blast it the ASVs
+

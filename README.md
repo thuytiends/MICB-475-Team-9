@@ -23,7 +23,7 @@
 ### March 🌸
 [Mar 28: Meet with Hans and Evelyn!](/Meeting_minutes/2025-03-28.md)
 ### April 💻
-[Apr 11: Hans left us :(, but Evelyn is still with us ;D]
+[Apr 4: Hans left us :(, but Evelyn is still with us ;D](\Meeting_minutes/2025-04-04.md)
 ## Lab Notebook 
  * [LN01](/Lab-notebook/LN01.md) - QIIME2 Demultiplexing
  * LN02 - QIIME2 Denoising and Clustering

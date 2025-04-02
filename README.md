@@ -21,9 +21,9 @@
 ### February ⛄
 [Feb 1st](/Meeting_minutes/2025-02-01.md) | [Feb 7th](/Meeting_minutes/2025-02-07.md) | [Feb 11th](/Meeting_minutes/2025-02-11.md) | [Feb 13th](/Meeting_minutes/2025-02-13.md) | [Feb 19th](/Meeting_minutes/2025-02-19.md) | [Feb 23rd](/Meeting_minutes/2025-02-23.md) |[Feb 28th](/Meeting_minutes/2025-02-28.md)
 ### March 🌸
-
+[Mar 28: Meet with Hans and Evelyn!](/Meeting_minutes/2025-03-28.md)
 ### April 💻
-
+[Apr 11: Hans left us :(, but Evelyn is still with us ;D]
 ## Lab Notebook 
  * [LN01](/Lab-notebook/LN01.md) - QIIME2 Demultiplexing
  * LN02 - QIIME2 Denoising and Clustering

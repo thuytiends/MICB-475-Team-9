@@ -30,13 +30,17 @@
  * LN03 - QIIME2 Taxonomic Analysis
  * [LN04](/Lab-notebook/LN04.md) - RStudio Phyloseq object
  * LN05 - RStudio Alpha and Beta Analysis for Labor Type
+ * LN06 - Core microbiome
+ * LN07 - Indicator Species Analysis
+ * LN08 - Functional analysis
 
 ## Finalized Codes
 ### QIIME2
  * [Data cleaning and processing](/QIIME2-Analysis/QIIME2-Data-Processing-Script.txt) 
  * Aim 3: PICRUST2 Analysis
 ### RStudio
- * Aim 1: .R or .Rmd files
- * Aim 2: above
- * Aim 3: above
+ * Aim 1: Alpha and beta diversity analyses
+ * Aim 2: Core microbiome
+ * Aim 2.2: Indicator species analysis
+ * Aim 3: Functional analysis
 

@@ -1,7 +1,6 @@
 # MICB 475: Data Science Research in Microbiology and Immunology
 ## Reminder for team: When creating a folder/sub-folder, add -/_ in between space (e.g. Lab-notebook). Github doesn't recognize "Lab notebook" and you won't be able to link documents from there
 ## Timeline
-### Yay we got a plan 😄!
 <img src= "/Team-proposal/weekly timeline.png">
 <br><br> 
 

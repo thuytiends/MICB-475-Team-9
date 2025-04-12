@@ -22,7 +22,7 @@
 ### March 🌸
 [Mar 07](/Meeting_minutes/2025-03-07.md) | [Mar 14](/Meeting_minutes/2025-03-14.md) | [Mar 21](/Meeting_minutes/2025-03-21.md) | [Mar 28: Meet with Hans and Evelyn!](/Meeting_minutes/2025-03-28.md)
 ### April 💻
-[Apr 4](/Meeting_minutes/2025-04-04.md)
+[Apr 4](/Meeting_minutes/2025-04-04.md) | [Apr 11](/Meeting_minutes/2025-04-11.md)
 ## Lab Notebook 
  * [LN01](/Lab-notebook/LN01.md) - QIIME2 Demultiplexing
  * LN02 - QIIME2 Denoising and Clustering

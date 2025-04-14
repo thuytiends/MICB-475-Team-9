@@ -1,0 +1,107 @@
+### Libraries
+
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(microbiome)
+library(ggVennDiagram)
+library(ape)
+library(vegan)
+```
+
+# Phyloseq
+
+## Loading & Processing Raw Files
+
+#### Metadata
+
+```{r}
+metaFP <- "../QIIME2 analysis/hiv_metadata.tsv" 
+meta <- read_delim(file = metaFP, delim = "\t")
+
+#formatting for phyloseq
+meta_df <- as.data.frame(meta[,-1]) #set as data frame, remove first row
+rownames(meta_df) <- meta$'sample-id'
+samp <- sample_data(meta_df)
+class(samp)
+```
+
+#### OTU Table
+
+```{r}
+otuFP <- "../QIIME2 analysis/table-hiv.txt"
+otu <- read_delim(file=otuFP, delim="\t", skip=1)
+
+#formatting for phyloseq
+otu_mat <- as.matrix(otu[,-1])
+rownames(otu_mat) <- otu$"#OTU ID"
+OTU <- otu_table(otu_mat, taxa_are_rows = TRUE)
+class(OTU)
+```
+
+#### Taxonomy Table
+
+```{r}
+taxFP <- "../QIIME2 analysis/taxonomy.tsv" #importing taxonomy.tsv
+tax <- read_delim(file=taxFP, delim = "\t")
+
+#formatting taxonomy table and separating taxa categories 
+tax_mat <- tax %>%
+  select(-Confidence) %>% #deleting Confidence column
+  separate(col = Taxon, sep = "; ",
+           into = c("Domain", "Phylum", "Class", "Order", "Family", "Genus", "Species")) %>%
+  as.matrix()
+
+#formatting for phyloseq 
+tax_mat <- tax_mat[,-1]
+rownames(tax_mat) <- tax$'Feature ID'
+TAX <- tax_table(tax_mat)
+class(TAX)
+```
+
+#### Phylogenetic Tree
+
+```{r}
+phyloFP <- "../QIIME2 analysis/tree.nwk"
+phylo <- read.tree(phyloFP)
+```
+
+### Creating the Phyloseq Object
+
+```{r}
+hiv <- phyloseq(OTU, samp, TAX, phylo) #yay
+
+otu_table(hiv)
+sample_data(hiv)
+tax_table(hiv)
+phy_tree(hiv)
+```
+
+## Data Processing
+
+#### Filtering the data
+
+```{r}
+hiv_filt <- subset_taxa(hiv,  Domain == "d__Bacteria" & Class!="c__Chloroplast" & Family !="f__Mitochondria") #remove non-bacterial sequences
+
+hiv_filt_nolow <- filter_taxa(hiv_filt, function(x) sum(x)>5, prune = TRUE) #remove ASVs with less than 5 counts totals
+
+hiv_filt_nolow_samps <- prune_samples(sample_sums(hiv_filt_nolow)>100, hiv_filt_nolow) #remove samples with less than 100 reads
+
+hiv_final <- subset_samples(hiv_filt_nolow_samps, !is.na(month) )
+```
+
+#### Rarefaction
+
+```{r}
+rarecurve(t(as.data.frame(otu_table(hiv_final))), cex=0.1)
+hiv_rare <- rarefy_even_depth(hiv_final, rngseed = 1, sample.size = 1000) #removed 401 OTUs due to random subsampling
+```
+
+## Saving the data
+
+```{r}
+save(hiv_final, file = "hiv_final.Rdata")
+save(hiv_rare, file = "hiv_rare.Rdata")
+save(hiv, file = "hiv_raw.Rdata")
+```

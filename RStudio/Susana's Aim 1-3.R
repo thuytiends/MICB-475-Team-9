@@ -1,3 +1,6 @@
+
+####AIM 1####
+
 # 1. Load packages
 library(tidyverse)
 library(phyloseq)
@@ -1058,6 +1061,24 @@ ggsave(filename = "PERMANOVA_plot_AgeGroups.png"
        , height=4, width=6)
 
 
+####AIM 2####
+
+### Load data ###
+load("hiv_final.RData")
+
+#metadata reorganizing
+hiv_final <- subset_samples(hiv_final,Visit_Cat == "2nd Visit")
+
+labor_rename <- as.data.frame(sample_data(hiv_final))
+labor_rename$Visit_Age <- ifelse(labor_rename$Visit_Age > 45, "Older than 45", "Younger than 45")
+labor_rename$Labor_category <- ifelse(labor_rename$Labor_category %in% c("Non_Labor_Houseworker","Non_Labor_Other","Unemployed"), "Non-Labor", "Labor")
+sample_data(hiv_final) <- sample_data(labor_rename)
+
+hiv_pos <- subset_samples(hiv_final, HIV_Status == "Positive")
+hiv_neg <- subset_samples(hiv_final, HIV_Status == "Negative")
+head(sample_data(hiv_final))
+
+colnames(sample_data(hiv_final))
 
 ####DESeq####
 library(DESeq2)
@@ -1067,18 +1088,19 @@ library(phyloseq)
 BiocManager::install("DESeq2")
 
 #Age
-hiv_deseq_agegrp <- phyloseq_to_deseq2(hiv_final, ~`Age_Group`)
+hiv_deseq_agegrp <- phyloseq_to_deseq2(hiv_final, ~`Visit_Age`)
 hiv_agegrp_plus1 <- transform_sample_counts(hiv_pos, function(x) x+1)
 
-hiv_deseq_agegrp <- phyloseq_to_deseq2(hiv_agegrp_plus1, ~`Age_Group`)
+hiv_deseq_agegrp <- phyloseq_to_deseq2(hiv_agegrp_plus1, ~`Visit_Age`)
 DESEQ_hiv_agegrp <- DESeq(hiv_deseq_agegrp)
 
 results_hiv_agegrp <- results(DESEQ_hiv_agegrp, tidy=TRUE, 
                               #this will ensure that No is your reference group
-                              contrast = c("Age_Group","Young Adults","Aging Adults"))
+                              contrast = c("Visit_Age","Older than 45","Younger than 45"))
 
 View(results_hiv_agegrp)
 colnames(colData(DESEQ_hiv_labor))
+colnames(colData(DESEQ_hiv_agegrp))
 #Education
 hiv_deseq_Education <- phyloseq_to_deseq2(hiv_pos, ~`Education_Level`)
 hiv_Education_plus1 <- transform_sample_counts(hiv_pos, function(x) x+1)
@@ -1089,7 +1111,7 @@ DESEQ_hiv_Education <- DESeq(hiv_deseq_Education)
 
 results_hiv_Education <- results(DESEQ_hiv_Education, tidy=TRUE, 
                               #this will ensure that No is your reference group
-                              contrast = c("Education_Level","Primary","Secondary"))
+                              contrast = c("Education_Level","Secondary","Tertiary"))
 
 View(results_hiv_Education)
 
@@ -1108,21 +1130,6 @@ levels(DESEQ_hiv_labor$Labor_category)
 
 View(results_hiv_labor)
 ## Volcano plot: effect size VS significance
-#Age
-volcanoplot_hiv_agegrp <- ggplot(results_hiv_agegrp) +   
-  geom_point(aes(x = log2FoldChange, y = -log10(padj)), color = "#2c7bb6") +  # Use color instead of fill
-  theme(
-    axis.text = element_text(size = 16),      # Axis text size
-    axis.title = element_text(size = 18)      # Axis title size
-  )
-   
-
-volcanoplot_hiv_agegrp
-ggsave(filename = "DESeq_Volcanoplot_AgeGroups.png"
-       , volcanoplot_hiv_agegrp_hivneg
-       , height=4, width=6)
-
-
 ## Make variable to color by whether it is significant + large change
 #Age
 vol_plot_hiv_agegrp <- results_hiv_agegrp %>%   
@@ -1146,7 +1153,7 @@ vol_plot_hiv_labor <- results_hiv_labor %>%
   ggplot() +
   geom_point(aes(x = log2FoldChange, y = -log10(padj), color = significant)) +
   scale_color_manual(values = c("FALSE" = "#fdae61", "TRUE" = "#d7191c")) +
-  theme_bw() +  
+  theme_minimal() +  
   theme(
     axis.text = element_text(size = 16),      # Set axis text size
     axis.title = element_text(size = 18)      # Set axis title size
@@ -1177,10 +1184,14 @@ sigASVs <- results_hiv_labor %>%
   filter(padj<0.01 & abs(log2FoldChange)>2) %>%
   dplyr::rename(ASV=row)
 
-# Sort by absolute log2FoldChange and get only the top 10 ASVs
-top10_sigASVs <- sigASVs %>%
-  arrange(desc(abs(log2FoldChange))) %>% 
-  slice_head(n = 10)  # Select only the top 10
+sigASVs <- results_hiv_agegrp %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+sigASVs <- results_hiv_Education %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
 
 View(sigASVs)
 nrow(sigASVs)
@@ -1188,9 +1199,6 @@ nrow(sigASVs)
 sigASVs_vec <- sigASVs %>%
   pull(ASV)
 
-
-sigASVs_vec <- top10_sigASVs %>% 
-  pull(ASV)
 # Prune phyloseq file
 hiv_agegrp_DESeq <- prune_taxa(sigASVs_vec,hiv_pos)
 hiv_agegrp_sigASVs <- tax_table(hiv_agegrp_DESeq) %>% as.data.frame() %>%
@@ -1241,8 +1249,12 @@ DESeqsig_hiv_Education <-ggplot(hiv_Education_sigASVs) +
   theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
 
 DESeqsig_hiv_Education
-ggsave(filename = "DESeqsig_hiv_Education_sec_ter_hivpos.png", plot = DESeqsig_hiv_Education, width = 12, height = 8, dpi = 300)
+ggsave(filename = "DESeqsig_hiv_Education_pri_sec_hivpos.png", plot = DESeqsig_hiv_Education, width = 12, height = 8, dpi = 300)
 
+
+
+
+#####AIM 3#####
 ####DESeq2 Pathway Analysis####
 
 # Create a list of all the packages you need to install
@@ -1436,7 +1448,7 @@ ggsave("Education_heatmap_top10_sec_ter.png", plot = Education_heatmap_top10_sec
 Education_pathway_pca <- pathway_pca(abundance = abundance_data_filtered %>% column_to_rownames("pathway"),
                                      metadata = metadata_filtered, group = "Education_Level")
 
-
+Education_pathway_pca
 
 
 # Generating a bar plot representing log2FC from the custom deseq2 function
@@ -1557,24 +1569,3 @@ ggsave("Education_volcanoplot_pathways.png", plot = Education_volcanoplot_pathwa
 
 
 
-
-# Convert abundance data to a phyloseq object if not already done
-otu_table <- otu_table(as.matrix(abundance_data_filtered), taxa_are_rows = TRUE)
-sample_metadata <- sample_data(metadata_filtered)
-
-physeq_obj <- phyloseq(otu_table, sample_metadata)
-
-# Perform PCoA on Bray-Curtis or Weighted UniFrac distances
-ordination <- ordinate(physeq_obj, method = "PCoA", distance = "bray")  # Change to "wunifrac" if needed
-
-# PCoA plot for pathways by education level
-pcoa_weighted_plot_HIV_Education <- plot_ordination(
-  physeq_obj, ordination, color = "Education_Level"
-) +
-  geom_point(size = 3, alpha = 0.8) +
-  ggtitle("PCoA - Pathway Composition (Education Level)") +
-  theme_minimal() +
-  scale_color_manual(values = c("#d7191c", "#fdae61"))
-
-# Display the plot
-print(pcoa_weighted_plot_HIV_Education)

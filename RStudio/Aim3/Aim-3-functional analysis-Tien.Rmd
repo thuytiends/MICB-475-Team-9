@@ -1,0 +1,339 @@
+---
+title: "Aim 3_TD"
+author: "Tien Do"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##### Install packages #####
+# Start by installing all necessary packages when asked if you want to install
+# from source, please just type Yes in the terminal below
+
+# If you don't have BiocManager, here is the code to install it
+# A lot of you probably already have this so you can skip
+
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+# Create a list of all the packages you need to install
+```{r}
+pkgs <- c("ALDEx2", "SummarizedExperiment", "Biobase", "devtools", 
+          "ComplexHeatmap", "BiocGenerics", "metagenomeSeq", 
+          "Maaslin2", "edgeR", "lefser", "limma", "KEGGREST", "DESeq2")
+```
+# Use the above list to install all the packages using a for loop
+```{r, include=FALSE}
+for (pkg in pkgs) {
+  if (!requireNamespace(pkg, quietly = TRUE))
+    BiocManager::install(pkg)
+}
+```
+# when asked if you want to update all, some or none please type "n" for none
+
+# After installing all of its above dependencies, install ggpicrust2
+```{r,include=FALSE}
+devtools::install_github("cafferychen777/ggpicrust2")
+```
+#### Load packages ####
+# Load all necessary libraries
+```{r,include=FALSE}
+library(readr)
+library(ggpicrust2)
+library(tibble)
+library(tidyverse)
+library(ggprism)
+library(patchwork)
+library(DESeq2)
+library(ggh4x)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+```
+
+#### Import files and preparing tables ####
+#Importing the pathway PICrsut2
+```{r,include=FALSE}
+abundance_file <- "pathway_abundance.tsv"
+abundance_data <- read_delim(abundance_file, delim = "\t", col_names = TRUE, trim_ws = TRUE, skip=1)
+abundance_data  =as.data.frame(abundance_data)
+```
+#Import your metadata file, no need to filter yet
+```{r,include=FALSE}
+metadata <- read_delim("../QIIME2 analysis/hiv_metadata.tsv")
+```
+#Example Looking at subject number
+#If you have multiple variants, filter your metadata to include only 2 at a time
+
+#Filtering the abundance table to only include samples that are in the filtered metadata
+```{r}
+sample_name = metadata$'sample-id'
+sample_name = append(sample_name, "pathway")
+if (!"pathway" %in% colnames(abundance_data)) {
+  colnames(abundance_data)[1] <- "pathway"
+} 
+abundance_data_filtered = abundance_data[, colnames(abundance_data) %in% sample_name] #This step is the actual filtering
+```
+
+#Remove NAs for your column of interest in this case subject
+```{r}
+metadata = metadata[metadata$Visit_Cat == "2nd Visit",]
+metadata = metadata[metadata$HIV_Status == "Positive",]
+
+metadata$Visit_Age <- ifelse(metadata$Visit_Age > 45, "Older than 45", "Younger than 45")
+metadata$Labor_category <- ifelse(metadata$Labor_category %in% c("Non_Labor_Houseworker","Non_Labor_Other","Unemployed"), "Non-Labor", "Labor")
+metadata$Education_Level <- ifelse(metadata$Education_Level %in% c("Primary","Secondary"),"Primary and Secondary","Tertiary")
+metadata$Education_Level <- factor(metadata$Education_Level, levels = c("Tertiary", "Primary and Secondary"))
+
+metadata = metadata[!is.na(metadata$Visit_Age),]
+metadata = metadata[!is.na(metadata$Labor_category),]
+metadata = metadata[!is.na(metadata$Education_Level),]
+```
+
+#Filtering the abundance table to only include samples that are in the filtered metadata
+```{r}
+sample_names = metadata$'sample-id'
+sample_names = append(sample_names, "pathway")
+if (!"pathway" %in% colnames(abundance_data)) {
+  colnames(abundance_data)[1] <- "pathway"
+} 
+abundance_data_filtered = abundance_data[, colnames(abundance_data) %in% sample_names] #This step is the actual filtering
+```
+
+#Removing individuals with no data that caused a problem for pathways_daa()
+```{r}
+abundance_data_filtered =  abundance_data_filtered[, colSums(abundance_data_filtered != 0) > 0]
+```
+#Ensuring the rownames for the abundance_data_filtered is empty. This is required for their functions to run.
+```{r}
+rownames(abundance_data_filtered) = NULL
+```
+#verify samples in metadata match samples in abundance_data
+```{r}
+abun_samples = rownames(t(abundance_data_filtered[,-1])) #Getting a list of the sample names in the newly filtered abundance data
+metadata = metadata[metadata$`sample-id` %in% abun_samples,]#making sure the filtered metadata only includes these samples
+```
+# AGE DESEq #
+
+#Perform pathway DAA using DESEQ2 method
+```{r}
+abundance_daa_results_df <- pathway_daa(abundance = abundance_data_filtered %>% column_to_rownames("pathway"), 
+                                        metadata = metadata, group = "Visit_Age", daa_method = "DESeq2")
+# Annotate MetaCyc pathway so they are more descriptive
+metacyc_daa_annotated_results_df <- pathway_annotation(pathway = "MetaCyc", 
+                                                       daa_results_df = abundance_daa_results_df, ko_to_kegg = FALSE)
+# Filter p-values to only significant ones
+feature_with_p_0.05 <- abundance_daa_results_df %>% filter(p_values < 0.05)
+#Changing the pathway column to description for the results 
+feature_desc = inner_join(feature_with_p_0.05,metacyc_daa_annotated_results_df, by = "feature")
+feature_desc$feature = feature_desc$description
+feature_desc = feature_desc[,c(1:7)]
+colnames(feature_desc) = colnames(feature_with_p_0.05)
+#Changing the pathway column to description for the abundance table
+
+abundance = abundance_data_filtered %>% filter(pathway %in% feature_with_p_0.05$feature)
+colnames(abundance)[1] = "feature"
+abundance_desc = inner_join(abundance,metacyc_daa_annotated_results_df, by = "feature")
+abundance_desc$feature = abundance_desc$description
+#this line will change for each dataset. 34 represents the number of samples in the filtered abundance table
+abundance_desc = abundance_desc[,-c(106:ncol(abundance_desc))] 
+# Generate a heatmap
+
+png("age_heatmap.png", width = 2200, height = 3800, res = 150)
+pathway_heatmap(abundance = abundance_desc %>% column_to_rownames("feature"), metadata = metadata, group = "Visit_Age")
+dev.off()
+# Generate pathway PCA plot
+#ab_new <- abundance_data_filtered
+#ab_new <- ab_new[apply(abundance_data_filtered, 1, var, na.rm = TRUE) != 0, ]
+#rownames(ab_new) = NULL
+#png("pcoa_age.png",width=1500,height=900,res=180)  
+#pathway_pca(abundance = ab_new%>%column_to_rownames("pathway"), metadata = metadata, group = "Visit_Age")
+#dev.off()
+
+# Generating a bar plot representing log2FC from the custom deseq2 function
+# Go to the Deseq2 function script and update the metadata category of interest
+# Lead the function in
+source("DESeq2_function.R")
+# Run the function on your own data
+res =  DEseq2_function(abundance_data_filtered, metadata, "Visit_Age")
+res$feature =rownames(res)
+res_desc = inner_join(res,metacyc_daa_annotated_results_df, by = "feature")
+res_desc = res_desc[, -c(8:13)]
+View(res_desc)
+# Filter to only include significant pathways
+sig_res = res_desc %>%
+  filter(pvalue < 0.05)
+sig_res <- sig_res[abs(sig_res$log2FoldChange) >= 2, ]
+sig_res <- sig_res[order(sig_res$log2FoldChange), ]
+```
+# You can also filter by Log2fold change
+```{r}
+
+ggplot(data = sig_res, aes(y = reorder(description, sort(as.numeric(log2FoldChange))), x= log2FoldChange))+
+  geom_bar(stat = "identity")+ 
+  scale_fill_gradient(high= "#edf8e9" ,low="#006d2c")+
+  theme_minimal()+
+  labs(x = "Log2FoldChange", y="Pathways")
+
+```
+# LABOUR DESEq #
+png("age_barplot_aim3.png", width = 1500, height = 500, res = 150)
+dev.off()
+```{r}
+##Perform pathway DAA using DESEQ2 method
+labour_abundance_daa_results_df <- pathway_daa(abundance = abundance_data_filtered %>% column_to_rownames("pathway"), 
+                                        metadata = metadata, group = "Labor_category", daa_method = "DESeq2")
+
+## Annotate MetaCyc pathway so they are more descriptive
+labour_metacyc_daa_annotated_results_df <- pathway_annotation(pathway = "MetaCyc", 
+                                                       daa_results_df = labour_abundance_daa_results_df, ko_to_kegg = FALSE)
+
+## Filter p-values to only significant ones
+labour_feature_with_p_0.05 <- labour_abundance_daa_results_df %>% filter(p_values < 0.05)
+
+##Changing the pathway column to description for the results 
+feature_desc = inner_join(labour_feature_with_p_0.05,labour_metacyc_daa_annotated_results_df, by = "feature")
+feature_desc$feature = feature_desc$description
+feature_desc = feature_desc[,c(1:7)]
+colnames(feature_desc) = colnames(labour_feature_with_p_0.05)
+
+##Changing the pathway column to description for the abundance table
+abundance = abundance_data_filtered %>% filter(pathway %in% labour_feature_with_p_0.05$feature)
+colnames(abundance)[1] = "feature"
+abundance_desc = inner_join(abundance,labour_metacyc_daa_annotated_results_df, by = "feature")
+abundance_desc$feature = abundance_desc$description
+#this line will change for each dataset. 34 represents the number of samples in the filtered abundance table
+abundance_desc = abundance_desc[,-c(106:ncol(abundance_desc))] 
+# Generate a heatmap
+png("labour_heatmap.png", width = 2200, height = 1800, res = 150)
+pathway_heatmap(abundance = abundance_desc %>% column_to_rownames("feature"), metadata = metadata, group = "Labor_category")
+dev.off()
+
+# Generate pathway PCA plot
+#png("pcoa_labor.png",width=1500,height=900,res=180)  
+#pathway_pca(abundance = ab_new%>%column_to_rownames("pathway"), metadata = metadata_temp, group = "Labor_category")
+#dev.off()
+
+# Generating a bar plot representing log2FC from the custom deseq2 function
+
+# Go to the Deseq2 function script and update the metadata category of interest
+source("DESeq2_function.R")
+
+
+# Run the function on your own data
+labour_res =  DEseq2_function(abundance_data_filtered, metadata, "Labor_category")
+labour_res$feature =rownames(labour_res)
+labour_res_desc = inner_join(labour_res,labour_metacyc_daa_annotated_results_df, by = "feature")
+labour_res_desc = labour_res_desc[, -c(8:13)]
+View(labour_res_desc)
+```
+
+# Filter to only include significant pathways
+```{r}
+labour_sig_res = labour_res_desc %>%
+  filter(pvalue < 0.05)
+labour_sig_res <- labour_sig_res[abs(labour_sig_res$log2FoldChange) >=1.5, ]
+labour_sig_res <- labour_sig_res[order(labour_sig_res$log2FoldChange), ]
+```
+# You can also filter by Log2fold change
+```{r}
+png("labour_barplot_aim3_2.png", width = 1500, height = 500, res = 150)
+ggplot(data = labour_sig_res, aes(y = reorder(description, sort(as.numeric(log2FoldChange))), x= log2FoldChange))+
+  geom_bar(stat = "identity")+ 
+  scale_fill_gradient(high= "#edf8e9" ,low="#006d2c")+
+  theme_minimal()+
+  labs(x = "Log2FoldChange", y="Pathways")
+dev.off()
+```
+
+
+# Education_Level DESEQ2: Primary and Secondary vs. Tertiary
+```{r}
+##Perform pathway DAA using DESEQ2 method
+ed_abundance_daa_results_df <- pathway_daa(abundance = abundance_data_filtered %>% column_to_rownames("pathway"), 
+                                        metadata = metadata, group = "Education_Level", daa_method = "DESeq2")
+
+## Annotate MetaCyc pathway so they are more descriptive
+ed_metacyc_daa_annotated_results_df <- pathway_annotation(pathway = "MetaCyc", 
+                                                       daa_results_df = ed_abundance_daa_results_df, ko_to_kegg = FALSE)
+
+## Filter p-values to only significant ones
+ed_feature_with_p_0.05 <- ed_abundance_daa_results_df %>% filter(p_values < 0.05)
+
+##Changing the pathway column to description for the results 
+feature_desc = inner_join(ed_feature_with_p_0.05,ed_metacyc_daa_annotated_results_df, by = "feature")
+feature_desc$feature = feature_desc$description
+feature_desc = feature_desc[,c(1:7)]
+colnames(feature_desc) = colnames(ed_feature_with_p_0.05)
+
+##Changing the pathway column to description for the abundance table
+abundance = abundance_data_filtered %>% filter(pathway %in% ed_feature_with_p_0.05$feature)
+colnames(abundance)[1] = "feature"
+abundance_desc = inner_join(abundance,ed_metacyc_daa_annotated_results_df, by = "feature")
+abundance_desc$feature = abundance_desc$description
+#this line will change for each dataset. 34 represents the number of samples in the filtered abundance table
+abundance_desc = abundance_desc[,-c(106:ncol(abundance_desc))] 
+
+# Generate a heatmap
+png("ed_heatmap.png", width = 2200, height = 1800, res = 150)
+pathway_heatmap(abundance = abundance_desc %>% column_to_rownames("feature"), metadata = metadata, group = "Education_Level")
+dev.off()
+
+# Generate pathway PCA plot
+#png("pcoa_ed.png",width=1500,height=900,res=180)  
+#pathway_pca(abundance = ab_new%>%column_to_rownames("pathway"), metadata = metadata_temp, group = "Education_Level")
+#dev.off()
+
+# Generating a bar plot representing log2FC from the custom deseq2 function
+
+# Go to the Deseq2 function script and update the metadata category of interest
+source("DESeq2_function.R")
+
+
+# Run the function on your own data
+ed_res =  DEseq2_function(abundance_data_filtered, metadata, "Education_Level")
+ed_res$feature =rownames(ed_res)
+ed_res_desc = inner_join(ed_res,ed_metacyc_daa_annotated_results_df, by = "feature")
+ed_res_desc = ed_res_desc[, -c(8:13)]
+View(ed_res_desc)
+```
+
+# Filter to only include significant pathways
+```{r}
+ed_sig_res = ed_res_desc %>%
+  filter(pvalue < 0.05)
+ed_sig_res <- ed_sig_res[abs(ed_sig_res$log2FoldChange) >= 2, ]
+ed_sig_res <- ed_sig_res[order(ed_sig_res$log2FoldChange), ]
+```
+# You can also filter by Log2fold change
+```{r}
+png("ed_barplot_aim3_filtered_priandsec_vs_ter.png", width = 1500, height = 500, res = 150)
+ggplot(data = ed_sig_res, aes(y = reorder(description, sort(as.numeric(log2FoldChange))), x= log2FoldChange,fill="#d7191c"))+
+  geom_bar(stat = "identity")+ 
+  theme_minimal()+
+  labs(x = "Log2FoldChange", y="Pathways")+
+  theme(legend.position="none")
+dev.off()
+```
+
+```{r}
+age <- ggplot(data = sig_res, aes(y = reorder(description, sort(as.numeric(log2FoldChange))), x= log2FoldChange, fill = "#d7191c"))+
+  geom_bar(stat = "identity")+ 
+  ggtitle("Age: Older than 45 vs. Younger than 45")+
+  theme_minimal()+
+  labs(x = "Log2FoldChange", y="Pathways")+
+  theme(legend.position = "none")
+    
+ed <- ggplot(data = ed_sig_res, aes(y = reorder(description, sort(as.numeric(log2FoldChange))), x= log2FoldChange,fill="#d7191c"))+
+  geom_bar(stat = "identity")+ 
+  ggtitle("Education: Tertiary vs. Primary and Secondary")+
+  theme_minimal()+
+  labs(x = "Log2FoldChange", y="Pathways")+
+  theme(legend.position="none")
+png("age and ed.png", width = 1200, height = 500, res = 150, bg="transparent")
+grid.arrange(age,ed)
+dev.off()
+```

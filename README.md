@@ -39,7 +39,6 @@
  * Aim 3: PICRUST2 Analysis
 ### RStudio
  * Aim 1: Alpha and beta diversity analyses
- * Aim 2: Core microbiome
- * Aim 2.2: Indicator species analysis
+ * Aim 2: Core microbiome and Indicator Species Analysis
  * Aim 3: Functional analysis
 

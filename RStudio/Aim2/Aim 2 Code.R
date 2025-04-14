@@ -216,187 +216,99 @@ isa_hiv_positive_age$sign %>%
 #### DESEQ-2 ANALYSIS
 ## DESEQ, NOTE: If you get a zeros error, then you need to add '1' count to all reads
 
-### Load data ###
-load("hiv_final.RData")
+hiv_positive_plus1 <- transform_sample_counts(hiv_positive, function(x) x+1)
+hiv_positive_age_deseq <- phyloseq_to_deseq2(hiv_positive_plus1, ~`Visit_Age`)
+DESEQ_hiv_positive_age <- DESeq(hiv_positive_age_deseq)
+res <- results(DESEQ_hiv_positive_age, tidy=TRUE, 
+               #this will ensure that No is your reference group
+               contrast = c("Visit_Age","Older than 45", "Younger than 45"))
+View(res)
 
-#metadata reorganizing
-hiv_final <- subset_samples(hiv_final,Visit_Cat == "2nd Visit")
-
-labor_rename <- as.data.frame(sample_data(hiv_final))
-labor_rename$Visit_Age <- ifelse(labor_rename$Visit_Age > 45, "Older than 45", "Younger than 45")
-labor_rename$Labor_category <- ifelse(labor_rename$Labor_category %in% c("Non_Labor_Houseworker","Non_Labor_Other","Unemployed"), "Non-Labor", "Labor")
-sample_data(hiv_final) <- sample_data(labor_rename)
-
-hiv_pos <- subset_samples(hiv_final, HIV_Status == "Positive")
-hiv_neg <- subset_samples(hiv_final, HIV_Status == "Negative")
-head(sample_data(hiv_final))
-
-colnames(sample_data(hiv_final))
-
-#Age
-hiv_deseq_agegrp <- phyloseq_to_deseq2(hiv_final, ~`Visit_Age`)
-hiv_agegrp_plus1 <- transform_sample_counts(hiv_pos, function(x) x+1)
-
-hiv_deseq_agegrp <- phyloseq_to_deseq2(hiv_agegrp_plus1, ~`Visit_Age`)
-DESEQ_hiv_agegrp <- DESeq(hiv_deseq_agegrp)
-
-results_hiv_agegrp <- results(DESEQ_hiv_agegrp, tidy=TRUE, 
-                              #this will ensure that No is your reference group
-                              contrast = c("Visit_Age","Older than 45","Younger than 45"))
-
-View(results_hiv_agegrp)
-colnames(colData(DESEQ_hiv_labor))
-colnames(colData(DESEQ_hiv_agegrp))
-#Education
-hiv_deseq_Education <- phyloseq_to_deseq2(hiv_pos, ~`Education_Level`)
-hiv_Education_plus1 <- transform_sample_counts(hiv_pos, function(x) x+1)
-
-hiv_deseq_Education <- phyloseq_to_deseq2(hiv_Education_plus1, ~`Education_Level`)
-DESEQ_hiv_Education <- DESeq(hiv_deseq_Education)
-
-
-results_hiv_Education <- results(DESEQ_hiv_Education, tidy=TRUE, 
-                              #this will ensure that No is your reference group
-                              contrast = c("Education_Level","Secondary","Tertiary"))
-
-View(results_hiv_Education)
-
-#Labor
-hiv_deseq_labor <- phyloseq_to_deseq2(hiv_pos, ~`Labor_category`)
-hiv_labor_plus1 <- transform_sample_counts(hiv_pos, function(x) x+1)
-
-hiv_deseq_labor <- phyloseq_to_deseq2(hiv_labor_plus1, ~`Labor_category`)
-DESEQ_hiv_labor <- DESeq(hiv_deseq_labor)
-
-
-results_hiv_labor <- results(DESEQ_hiv_labor, tidy=TRUE, 
-                                 #this will ensure that No is your reference group
-                                 contrast = c("Labor_category","Labor","Non-Labor"))
-levels(DESEQ_hiv_labor$Labor_category)
-
-View(results_hiv_labor)
 ## Volcano plot: effect size VS significance
+hiv_positive_volcano <- ggplot(res) +
+  geom_point(aes(x=log2FoldChange, y=-log10(padj)))
+
+hiv_positive_volcano
+
 ## Make variable to color by whether it is significant + large change
-#Age
-vol_plot_hiv_agegrp <- results_hiv_agegrp %>%   
-  mutate(significant = padj < 0.01 & abs(log2FoldChange) > 2) %>%   
-  ggplot() +   
-  geom_point(aes(x = log2FoldChange, y = -log10(padj), color = significant)) +   
-  scale_color_manual(values = c("FALSE" = "#fdae61", "TRUE" = "#d7191c")) +   
-  theme_minimal() +  
-  theme(
-    axis.text = element_text(size = 16),      # Set axis text size
-    axis.title = element_text(size = 18)      # Set axis title size
-  )
-
-vol_plot_hiv_agegrp
-
-ggsave(filename="vol_plot_hiv_agegrp_hivpos.png",vol_plot_hiv_agegrp)
-
-#Labor
-vol_plot_hiv_labor <- results_hiv_labor %>%
-  mutate(significant = padj < 0.01 & abs(log2FoldChange) > 2) %>%
+hiv_positive_age_vol_plot <- res %>%
+  mutate(significant = padj<0.01 & abs(log2FoldChange)>2) %>%
   ggplot() +
-  geom_point(aes(x = log2FoldChange, y = -log10(padj), color = significant)) +
-  scale_color_manual(values = c("FALSE" = "#fdae61", "TRUE" = "#d7191c")) +
-  theme_minimal() +  
-  theme(
-    axis.text = element_text(size = 16),      # Set axis text size
-    axis.title = element_text(size = 18)      # Set axis title size
-  )
+  geom_point(aes(x=log2FoldChange, y=-log10(padj), col=significant))
 
-vol_plot_hiv_labor
+hiv_positive_age_vol_plot
 
-ggsave(filename="vol_plot_hiv_labor_hivpos.png",vol_plot_hiv_labor)
-
-#Education volcano plot
-vol_plot_hiv_Education <- results_hiv_Education %>%
-  mutate(significant = padj < 0.01 & abs(log2FoldChange) > 2) %>%
-  ggplot() +
-  geom_point(aes(x = log2FoldChange, y = -log10(padj), color = significant)) +
-  scale_color_manual(values = c("FALSE" = "#fdae61", "TRUE" = "#d7191c")) +
-  theme_minimal() +  
-  theme(
-    axis.text = element_text(size = 16),      # Set axis text size
-    axis.title = element_text(size = 18)      # Set axis title size
-  )
-
-vol_plot_hiv_Education
-
-ggsave(filename="vol_plot_hiv_Education_sec_ter_hivpos.png",vol_plot_hiv_Education)
-
+ggsave(filename="hiv_positive_age_vol_plot.png",hiv_positive_age_vol_plot)
 
 # To get table of results
-sigASVs <- results_hiv_labor %>% 
+sigASVs <- res %>% 
   filter(padj<0.01 & abs(log2FoldChange)>2) %>%
   dplyr::rename(ASV=row)
-
-sigASVs <- results_hiv_agegrp %>% 
-  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
-  dplyr::rename(ASV=row)
-
-sigASVs <- results_hiv_Education %>% 
-  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
-  dplyr::rename(ASV=row)
-
 
 View(sigASVs)
-nrow(sigASVs)
-# Get only asv names
+
+# Get only ASV names
 sigASVs_vec <- sigASVs %>%
   pull(ASV)
 
-## Prune phyloseq file
-
-#Age
-hiv_agegrp_DESeq <- prune_taxa(sigASVs_vec,hiv_pos)
-hiv_agegrp_sigASVs <- tax_table(hiv_agegrp_DESeq) %>% as.data.frame() %>%
+# Prune phyloseq file
+hiv_positive_age_DESeq <- prune_taxa(sigASVs_vec,hiv_positive)
+sigASVs <- tax_table(hiv_positive_age_DESeq) %>% as.data.frame() %>%
   rownames_to_column(var="ASV") %>%
   right_join(sigASVs) %>%
   arrange(log2FoldChange) %>%
   mutate(Genus = make.unique(Genus)) %>%
   mutate(Genus = factor(Genus, levels=unique(Genus)))
 
-DESeqsig_hiv_agegrp <-ggplot(hiv_agegrp_sigASVs) +
+ggplot(sigASVs) +
   geom_bar(aes(x=Genus, y=log2FoldChange), stat="identity")+
   geom_errorbar(aes(x=Genus, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE)) +
   theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
 
-DESeqsig_hiv_agegrp
-ggsave(filename = "DESeqsig_hiv_agegrp_hivpos.png", plot = DESeqsig_hiv_agegrp, width = 12, height = 8, dpi = 300)
+##LABOR##
 
-#Labor
-hiv_labor_DESeq <- prune_taxa(sigASVs_vec,hiv_pos)
-hiv_labor_sigASVs <- tax_table(hiv_labor_DESeq) %>% as.data.frame() %>%
+hiv_positive_labor_deseq <- phyloseq_to_deseq2(hiv_positive_plus1, ~`Labor_category`)
+DESEQ_hiv_positive_labour <- DESeq(hiv_positive_labor_deseq)
+res_labor <- results(DESEQ_hiv_positive_labour, tidy=TRUE, 
+                     #this will ensure that No is your reference group
+                     contrast = c("Labor_category","Labor", "Non-Labor"))
+View(res_labor)
+
+## Volcano plot: effect size VS significance
+ggplot(res_labor) +
+  geom_point(aes(x=log2FoldChange, y=-log10(padj)))
+
+## Make variable to color by whether it is significant + large change
+hiv_positive_labor_vol_plot <- res_labor %>%
+  mutate(significant = padj<0.01 & abs(log2FoldChange)>2) %>%
+  ggplot() +
+  geom_point(aes(x=log2FoldChange, y=-log10(padj), col=significant))
+
+hiv_positive_labor_vol_plot
+
+ggsave(filename="hiv_positive_labor_vol_plot.png",hiv_positive_labor_vol_plot)
+
+# To get table of results
+sigASVs_labor <- res_labor %>% 
+  filter(padj<0.01 & abs(log2FoldChange)>2) %>%
+  dplyr::rename(ASV=row)
+
+View(sigASVs_labor)
+
+# Get only asv names
+sigASVs_labor_vec <- sigASVs_labor %>%
+  pull(ASV)
+
+# Prune phyloseq file
+hiv_positive_labor_DESeq <- prune_taxa(sigASVs_labor_vec,hiv_positive)
+sigASVs_labor <- tax_table(hiv_positive_labor_DESeq) %>% as.data.frame() %>%
   rownames_to_column(var="ASV") %>%
-  right_join(sigASVs) %>%
+  right_join(sigASVs_labor) %>%
   arrange(log2FoldChange) %>%
   mutate(Genus = make.unique(Genus)) %>%
   mutate(Genus = factor(Genus, levels=unique(Genus)))
 
-DESeqsig_hiv_labor <-ggplot(hiv_labor_sigASVs) +
+ggplot(sigASVs_labor) +
   geom_bar(aes(x=Genus, y=log2FoldChange), stat="identity")+
   geom_errorbar(aes(x=Genus, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE)) +
   theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
-
-DESeqsig_hiv_labor
-ggsave(filename = "DESeqsig_hiv_labor_hivpos.png", plot = DESeqsig_hiv_labor, width = 12, height = 8, dpi = 300)
-
-
-#Education
-hiv_Education_DESeq <- prune_taxa(sigASVs_vec,hiv_pos)
-hiv_Education_sigASVs <- tax_table(hiv_Education_DESeq) %>% as.data.frame() %>%
-  rownames_to_column(var="ASV") %>%
-  right_join(sigASVs) %>%
-  arrange(log2FoldChange) %>%
-  mutate(Genus = make.unique(Genus)) %>%
-  mutate(Genus = factor(Genus, levels=unique(Genus)))
-
-DESeqsig_hiv_Education <-ggplot(hiv_Education_sigASVs) +
-  geom_bar(aes(x=Genus, y=log2FoldChange), stat="identity")+
-  geom_errorbar(aes(x=Genus, ymin=log2FoldChange-lfcSE, ymax=log2FoldChange+lfcSE)) +
-  theme(axis.text.x = element_text(angle=90, hjust=1, vjust=0.5))
-
-DESeqsig_hiv_Education
-ggsave(filename = "DESeqsig_hiv_Education_pri_sec_hivpos.png", plot = DESeqsig_hiv_Education, width = 12, height = 8, dpi = 300)
-

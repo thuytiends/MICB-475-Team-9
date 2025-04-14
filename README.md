@@ -25,20 +25,20 @@
 [Apr 4](/Meeting_minutes/2025-04-04.md) | [Apr 11](/Meeting_minutes/2025-04-11.md)
 ## Lab Notebook 
  * [LN01](/Lab-notebook/LN01.md) - QIIME2 Demultiplexing
- * LN02 - QIIME2 Denoising and Clustering
- * LN03 - QIIME2 Taxonomic Analysis
+ * [LN02](/Lab-notebook/LN02.md) - QIIME2 Denoising and Clustering
+ * [LN03](/Lab-notebook/LN03.md) - QIIME2 Taxonomic Analysis
  * [LN04](/Lab-notebook/LN04.md) - RStudio Phyloseq object
- * LN05 - RStudio Alpha and Beta Analysis for Labor Type
- * LN06 - Core microbiome
- * LN07 - Indicator Species Analysis
- * LN08 - Functional analysis
+ * [LN05](/Lab-notebook/LN05.md) - RStudio Alpha and Beta Analysis for Labor Type
+ * [LN06](/Lab-notebook/LN06.md) - Core microbiome and Differential Abundance
+ * [LN07](/Lab-notebook/LN07.md) - Indicator Species Analysis
+ * [LN08](/Lab-notebook/LN08.md) - Functional analysis
 
 ## Finalized Codes
 ### QIIME2
  * [Data cleaning and processing](/QIIME2-Analysis/QIIME2-Data-Processing-Script.txt) 
  * Aim 3: PICRUST2 Analysis
 ### RStudio
- * Aim 1: Alpha and beta diversity analyses
- * Aim 2: Core microbiome and Indicator Species Analysis
- * Aim 3: Functional analysis
+ * [Aim 1](/RStudio/Aim1): Alpha and beta diversity analyses
+ * [Aim 2](/RStudio/Aim2): Core microbiome and Indicator Species Analysis
+ * [Aim 3](/RStudio/Aim3): Functional analysis
 

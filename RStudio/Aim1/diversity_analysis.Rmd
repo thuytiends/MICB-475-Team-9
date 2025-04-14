@@ -1,0 +1,865 @@
+# Libraries
+
+```{r}
+library(tidyverse)
+library(phyloseq)
+library(microbiome)
+library(ggVennDiagram)
+library(ape)
+library(vegan)
+library(picante)
+library(ggpubr)
+```
+
+# Data Filtering
+
+#### Loading data
+
+```{r}
+load("hiv_final.Rdata")
+load("hiv_rare.Rdata")
+
+final <- hiv_final
+rare <- hiv_rare
+```
+
+#### Initial Filtering
+
+```{r}
+final_week0 <- subset_samples(final, Visit == "2") #filtering for week0, or 2nd visit
+
+#turning Age into a categorical variable
+age_cat <- as.data.frame(sample_data(final_week0))
+age_cat$Visit_Age <- ifelse(age_cat$Visit_Age > 45, "Old", "Young")
+sample_data(final_week0) <- sample_data(age_cat)
+
+#turning Manual_work_job into a more digestible category
+job_cat <- as.data.frame(sample_data(final_week0))
+job_cat$Manual_work_job <- ifelse(job_cat$Manual_work_job == "Yes", "Labourer", "Non-labourer")
+sample_data(final_week0) <- sample_data(job_cat)
+
+
+final_week0_HIV <- subset_samples(final_week0, `HIV_Status` == "Positive") #HIV+ patients
+final_week0_noHIV <- subset_samples(final_week0, `HIV_Status` == "Negative") #HIV- patients 
+
+
+```
+
+### Sociodemographic Filtering
+
+#### By Age
+
+```{r}
+old_HIV <- subset_samples(final_week0_HIV, Visit_Age == "Old")
+sample_data(old_HIV)
+
+old_noHIV <- subset_samples(final_week0_noHIV, Visit_Age == "Old")
+sample_data(old_noHIV)
+
+young_HIV <- subset_samples(final_week0_HIV, Visit_Age == "Young")
+sample_data(young_HIV)
+
+young_noHIV <- subset_samples(final_week0_noHIV, Visit_Age == "Young")
+sample_data(young_noHIV)
+
+old <- subset_samples(final_week0, Visit_Age == "Old")
+young <- subset_samples(final_week0, Visit_Age == "Young")
+```
+
+#### By labor
+
+```{r}
+labor <- subset_samples(final_week0, Manual_work_job == "Labourer")
+non_labor <- subset_samples(final_week0, Manual_work_job == "Non-labourer")
+```
+
+#### By Education
+
+```{r}
+primary <- subset_samples(final_week0, Education_Level == "Primary")
+secondary <- subset_samples(final_week0, Education_Level == "Secondary")
+tertiary <- subset_samples(final_week0, Education_Level == "Tertiary")
+```
+
+# Labor vs HIV
+
+## Alpha Diversity
+
+### Labor Type (by labor status)
+
+```{r}
+color <- c("#d7191c", "#fdae61", "#abd9e9")
+#for HIV+ patients
+gg_richness_labor_HIV <- final_week0_HIV %>%
+  plot_richness(x = "Manual_work_job", measures = c("Shannon", "Chao1")) + 
+  geom_violin(aes(fill = Manual_work_job)) + 
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Labour Type") +
+  ggtitle("HIV+ patients") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_labor_HIV #shows alpha diversity in HIV+ patients with manual or not manual labor 
+
+#for HIV- patients
+gg_richness_labor_noHIV <- final_week0_noHIV %>%
+  plot_richness(x = "Manual_work_job", measures = c("Shannon", "Chao1")) + 
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  geom_violin(aes(fill = Manual_work_job)) + 
+  xlab("Labour Type") +
+  ggtitle("HIV- patients") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_labor_noHIV #shows alpha diversity in HIV- patients with manual or not manual labor 
+```
+
+### Labor Type (by HIV status)
+
+```{r}
+#for HIV+ patients
+gg_richness_labor <- labor %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  geom_boxplot (color = "#d7191c") + 
+  xlab("HIV Status") +
+  ggtitle("Laborers")
+
+gg_richness_labor #shows alpha diversity in HIV+ patients with manual or not manual labor 
+
+#for HIV- patients
+gg_richness_nonLabor <- non_labor %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+    stat_compare_means(method = "t.test", label = "p.format") +
+  geom_boxplot (color = "#fdae61") + 
+  xlab("HIV Status") +
+  ggtitle("Non Laborers")
+
+gg_richness_nonLabor #shows alpha diversity in HIV- patients with manual or not manual labor 
+
+#FDR for HIV-patients
+shannon_values <- estimate_richness(non_labor, measures = "Shannon")
+
+# Convert to a data frame for easy manipulation
+shannon_values_df <- as.data.frame(shannon_values)
+
+# Step 2: Extract the sample metadata
+data_nonLabor <- as.data.frame(sample_data(non_labor))
+
+# Ensure the sample metadata includes HIV_Status and is a factor
+data_nonLabor$HIV_Status <- as.factor(data_nonLabor$HIV_Status)
+
+# Step 3: Combine Shannon diversity values with the sample metadata
+combined_data <- cbind(data_nonLabor, Shannon = shannon_values_df$Shannon)
+
+# Step 4: Perform t-test (Shannon ~ HIV_Status)
+t_test_results <- compare_means(Shannon ~ HIV_Status, data = combined_data, method = "t.test")
+
+# Step 5: Apply False Discovery Rate (FDR) correction
+t_test_results$p.adj <- p.adjust(t_test_results$p, method = "fdr")
+
+# Print adjusted p-values to check
+print(t_test_results)
+```
+
+## Phylogenetic Diversity Calculations
+
+```{r}
+phy_distance_HIV <- pd(t(otu_table(final_week0_HIV)), phy_tree(final_week0_HIV),
+                 include.root=F) 
+
+sample_data(final_week0_HIV)$PD <- phy_distance_HIV$PD
+
+gg_faith_HIV.pd <- ggplot(sample_data(final_week0_HIV), aes(Manual_work_job, PD)) +
+  geom_boxplot(color = "#d7191c") +
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Labor category") +
+  ylab("Faith's PD") +
+  ggtitle("Labor Status in HIV+ patients")
+
+gg_faith_HIV.pd
+
+##
+
+phy_distance_noHIV <- pd(t(otu_table(final_week0_noHIV)), phy_tree(final_week0_noHIV),
+                 include.root=F) 
+
+sample_data(final_week0_noHIV)$PD <- phy_distance_noHIV$PD
+
+gg_faith_noHIV.pd <- ggplot(sample_data(final_week0_noHIV), aes(Manual_work_job, PD)) +
+  geom_boxplot(color = "#d7191c") +
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Labor category") +
+  ylab("Faith's PD") +
+  ggtitle("Labor Status in HIV- patients")
+
+gg_faith_noHIV.pd
+
+##
+
+phy_distance_labor <- pd(t(otu_table(labor)), phy_tree(labor),
+                 include.root=F) 
+
+sample_data(labor)$PD <- phy_distance_labor$PD
+
+gg_faith_labor.pd <- ggplot(sample_data(labor), aes(HIV_Status, PD)) +
+  geom_boxplot(color = "#fdae61") +
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Labor+ Patients")
+
+gg_faith_labor.pd
+
+##
+
+phy_distance_nolabor <- pd(t(otu_table(non_labor)), phy_tree(non_labor),
+                 include.root=F) 
+
+sample_data(non_labor)$PD <- phy_distance_nolabor$PD
+
+gg_faith_nolabor.pd <- ggplot(sample_data(non_labor), aes(HIV_Status, PD)) +
+  geom_boxplot(color = "#fdae61") +
+    stat_compare_means(method = "t.test", label = "p.format") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Labor- Patients")
+
+gg_faith_nolabor.pd
+```
+
+## Beta Diversity
+
+```{r}
+#HIV+
+bc_dm_HIV <- distance(final_week0_HIV, method="wunifrac")
+pcoa_bc_HIV <- ordinate(final_week0_HIV, method="PCoA", distance=bc_dm_HIV)
+
+gg_pcoa_HIV <- plot_ordination(final_week0_HIV, pcoa_bc_HIV, color = "Manual_work_job") +
+  labs(pch="Subject #", col = "Labor Type") +
+  ggtitle("HIV+ patients")
+gg_pcoa_HIV
+
+#HIV-
+bc_dm_noHIV <- distance(final_week0_noHIV, method="wunifrac")
+pcoa_bc_noHIV <- ordinate(final_week0_noHIV, method="PCoA", distance=bc_dm_noHIV)
+
+gg_pcoa_noHIV <- plot_ordination(final_week0_noHIV, pcoa_bc_noHIV, color = "Manual_work_job") +
+  labs(pch="Subject #", col = "Labor Type") +
+  ggtitle("HIV- patients") 
+gg_pcoa_noHIV
+
+#labor
+bc_dm_labor <- distance(labor, method="wunifrac")
+# check which methods you can specify
+pcoa_bc_labor <- ordinate(labor, method="PCoA", distance= bc_dm_labor)
+
+gg_pcoa_labor <- plot_ordination(labor, pcoa_bc_labor, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Laborers") 
+gg_pcoa_labor
+
+#Non labor
+bc_dm_nonlabor <- distance(non_labor, method="wunifrac")
+# check which methods you can specify
+pcoa_bc_nonlabor <- ordinate(non_labor, method="PCoA", distance= bc_dm_nonlabor)
+
+gg_pcoa_nonlabor <- plot_ordination(non_labor, pcoa_bc_nonlabor, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Non-Laborers") 
+gg_pcoa_nonlabor
+```
+
+### Taxonomic Bar Plots
+
+```{r}
+# Plot bar plot of taxonomy
+plot_bar(hiv_rare, fill="Phylum") 
+
+# Convert to relative abundance
+hiv_RA <- transform_sample_counts(hiv_rare, function(x) x/sum(x))
+
+# To remove black bars, "glom" by phylum first
+hiv_phylum <- tax_glom(hiv_RA, taxrank = "Phylum", NArm=FALSE)
+
+plot_bar(hiv_phylum, fill="Phylum") + 
+  facet_wrap(.~Manual_work_job, scales = "free_x")
+
+gg_taxa <- plot_bar(hiv_phylum, fill="Phylum") + 
+  facet_wrap(.~Manual_work_job, scales = "free_x")
+gg_taxa
+```
+
+## Statistics
+
+### Faith's Phylogenetic Diversity T-test
+
+```{r}
+df <- as.data.frame(sample_data(final_week0_HIV))
+t.test_HIV <- t.test(df$PD ~ df$Manual_work_job)
+t.test_HIV
+
+df <- as.data.frame(sample_data(final_week0_noHIV))
+t.test_noHIV <- t.test(df$PD ~ df$Manual_work_job)
+t.test_noHIV
+
+df <- as.data.frame(sample_data(labor))
+t.test_labor <- t.test(df$PD ~ df$HIV_Status)
+t.test_labor
+
+df <- as.data.frame(sample_data(non_labor))
+t.test_nonLabor <- t.test(df$PD ~ df$HIV_Status)
+t.test_nonLabor
+```
+
+### PERMANOVA
+
+```{r}
+#PERMANOVA, beta diversity
+samp_dat_wdiv <- data.frame(sample_data(hiv_rare), estimate_richness(hiv_rare))
+
+dm_unifrac <- UniFrac(hiv_rare, weighted=TRUE)
+
+# plot the above as an ordination to a PCoA plot
+ord.unifrac <- ordinate(hiv_rare, method="PCoA", distance="unifrac")
+
+# run the permanova on the above matrix for weighted unifrac
+?adonis2
+adonis2(dm_unifrac ~ `Manual_work_job`*HIV_Status, data=samp_dat_wdiv)
+
+# re-plot the above PCoA with ellipses to show a significant difference 
+# between body sites using ggplot2
+plot_ordination(hiv_rare, ord.unifrac, color = "HIV_Status") +
+  stat_ellipse(type = "norm")
+```
+
+### ANOVA
+
+```{r}
+#Differences in HIV- patients
+neg_noHIV <- estimate_richness(final_week0_noHIV, measures = "Shannon")
+neg_dat_noHIV <- sample_data(final_week0_noHIV)
+samp_neg_noHIV <- data.frame(neg_dat_noHIV, neg_noHIV)
+krus_neg_noHIV <- kruskal.test(Shannon ~ Manual_work_job, data = samp_neg_noHIV)
+lm_neg_noHIV <- lm(log(Shannon)~ Manual_work_job, data=samp_neg_noHIV)
+anova_neg_noHIV <- aov(lm_neg_noHIV)
+summary(anova_neg_noHIV)
+
+#Differences in HIV+ patients
+neg_HIV <- estimate_richness(final_week0_HIV, measures = "Shannon")
+neg_dat_HIV <- sample_data(final_week0_HIV)
+samp_neg_HIV <- data.frame(neg_dat_HIV, neg_HIV)
+krus_neg_HIV <- kruskal.test(Shannon ~ Manual_work_job, data = samp_neg_HIV)
+lm_neg_HIV <- lm(log(Shannon)~ Manual_work_job, data=samp_neg_HIV)
+anova_neg_HIV <- aov(lm_neg_HIV)
+summary(anova_neg_HIV)
+
+#Differences in manual labor individuals 
+neg_labor <- estimate_richness(labor, measures = "Shannon")
+neg_dat_labor <- sample_data(labor)
+samp_neg_labor <- data.frame(neg_dat_labor, neg_labor)
+krus_neg_labor <- kruskal.test(Shannon ~ HIV_Status, data = samp_neg_labor)
+lm_neg_labor <- lm(log(Shannon)~ HIV_Status, data=samp_neg_labor)
+anova_neg_labor <- aov(lm_neg_labor)
+summary(anova_neg_labor)
+
+#Differences in non-manual labor individuals 
+neg_nonlabor <- estimate_richness(non_labor, measures = "Shannon")
+neg_dat_nonlabor <- sample_data(non_labor)
+samp_neg_nonlabor <- data.frame(neg_dat_nonlabor, neg_nonlabor)
+krus_neg_nonlabor <- kruskal.test(Shannon ~ HIV_Status, data = samp_neg_nonlabor)
+lm_neg_nonlabor <- lm(log(Shannon)~ HIV_Status, data=samp_neg_nonlabor)
+anova_neg_nonlabor <- aov(lm_neg_nonlabor)
+summary(anova_neg_nonlabor)
+```
+
+# Age vs HIV
+
+## Alpha Diversity
+
+### Age (by Age Group)
+
+```{r}
+#for HIV+ patients
+gg_richness_age_HIV <- final_week0_HIV %>%
+  plot_richness(x = "Visit_Age", measures = c("Shannon", "Chao1")) + 
+  stat_compare_means(method = "t.test", label = "p.format") +
+  geom_boxplot (color = "#d7191c") + 
+  xlab("Age Group") +
+  ggtitle("HIV+ patients")
+
+gg_richness_age_HIV 
+
+#for HIV- patients
+gg_richness_age_noHIV <- final_week0_noHIV %>%
+  plot_richness(x = "Visit_Age", measures = c("Shannon", "Chao1")) + 
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  geom_boxplot (color = "#fdae61") + 
+  xlab("Age Group") +
+  ggtitle("HIV- patients")
+
+gg_richness_age_noHIV 
+```
+
+### Age (by HIV Status)
+
+```{r}
+#for OLD patients
+gg_richness_old <- old %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  geom_boxplot (color = "#d7191c") + 
+  xlab("HIV Status") +
+  ggtitle("Old (46+)")
+
+gg_richness_old
+
+#for YOUNG patients
+gg_richness_young <- young %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+    stat_compare_means(method = "t.test", label = "p.format") +
+  geom_boxplot (color = "#fdae61") + 
+  xlab("HIV Status") +
+  ggtitle("Young (18-45)")
+
+gg_richness_young
+```
+
+## Phylogenetic Diversity Calculations
+
+```{r}
+gg_faith_HIV.pd <- ggplot(sample_data(final_week0_HIV), aes(Visit_Age, PD)) +
+  geom_boxplot(color = "#d7191c") +
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Age") +
+  ylab("Faith's PD") +
+  ggtitle("Visit Age in HIV+ patients")
+
+gg_faith_HIV.pd
+
+##
+
+sample_data(final_week0_HIV)$PD <- phy_distance_HIV$PD
+
+gg_faith_noHIV.pd <- ggplot(sample_data(final_week0_noHIV), aes(Visit_Age, PD)) +
+  geom_boxplot(color = "#fdae61") +
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Age") +
+  ylab("Faith's PD") +
+  ggtitle("Visit Age in HIV- patients")
+
+gg_faith_noHIV.pd
+
+##
+
+phy_distance_old <- pd(t(otu_table(old)), phy_tree(old),
+                 include.root=F) 
+
+sample_data(old)$PD <- phy_distance_old$PD
+
+gg_faith_old.pd <- ggplot(sample_data(old), aes(HIV_Status, PD)) +
+  geom_boxplot(color = "#d7191c") +
+      stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Old patients")
+
+gg_faith_old.pd
+
+##
+
+phy_distance_young <- pd(t(otu_table(young)), phy_tree(young),
+                 include.root=F) 
+
+sample_data(young)$PD <- phy_distance_young$PD
+
+gg_faith_young.pd <- ggplot(sample_data(young), aes(HIV_Status, PD)) +
+  geom_boxplot(color = "#fdae61") +
+      stat_compare_means(method = "t.test", label = "p.format") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Young Patients")
+
+gg_faith_young.pd
+```
+
+## Beta Diversity
+
+```{r}
+#HIV+
+bc_dm_HIV <- distance(final_week0_HIV, method="wunifrac")
+pcoa_bc_HIV <- ordinate(final_week0_HIV, method="PCoA", distance=bc_dm_HIV)
+
+gg_pcoa_HIV <- plot_ordination(final_week0_HIV, pcoa_bc_HIV, color = "Visit_Age") +
+  labs(pch="Subject #", col = "Labor Type") +
+  ggtitle("HIV+ patients")
+gg_pcoa_HIV
+
+#HIV-
+bc_dm_noHIV <- distance(final_week0_noHIV, method="wunifrac")
+pcoa_bc_noHIV <- ordinate(final_week0_noHIV, method="PCoA", distance=bc_dm_noHIV)
+
+gg_pcoa_noHIV <- plot_ordination(final_week0_noHIV, pcoa_bc_noHIV, color = "Visit_Age") +
+  labs(pch="Subject #", col = "Labor Type") +
+  ggtitle("HIV- patients") 
+gg_pcoa_noHIV
+
+#old
+bc_dm_old <- distance(old, method="wunifrac")
+pcoa_bc_old <- ordinate(old,method="PCoA", distance= bc_dm_old)
+
+gg_pcoa_old <- plot_ordination(old, pcoa_bc_old, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Old Patients") 
+gg_pcoa_old
+
+#Non labor
+bc_dm_young <- distance(young, method="wunifrac")
+pcoa_bc_young <- ordinate(young, method="PCoA", distance= bc_dm_young)
+
+gg_pcoa_young <- plot_ordination(young, pcoa_bc_young, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Young Patients") 
+gg_pcoa_young
+```
+
+### Taxonomic Bar Plots
+
+```{r}
+# Plot bar plot of taxonomy
+plot_bar(hiv_rare, fill="Phylum") 
+
+# Convert to relative abundance
+hiv_RA <- transform_sample_counts(hiv_rare, function(x) x/sum(x))
+
+# To remove black bars, "glom" by phylum first
+hiv_phylum <- tax_glom(hiv_RA, taxrank = "Phylum", NArm=FALSE)
+
+plot_bar(hiv_phylum, fill="Phylum") + 
+  facet_wrap(.~Visit_Age, scales = "free_x")
+
+gg_taxa <- plot_bar(hiv_phylum, fill="Phylum") + 
+  facet_wrap(.~Visit_Age, scales = "free_x")
+gg_taxa
+```
+
+## Statistics
+
+### Faith's Phylogenetic Diversity
+
+```{r}
+df <- as.data.frame(sample_data(final_week0_HIV))
+t.test_HIV <- t.test(df$PD ~ df$Visit_Age)
+t.test_HIV
+
+df <- as.data.frame(sample_data(final_week0_noHIV))
+t.test_noHIV <- t.test(df$PD ~ df$Visit_Age)
+t.test_noHIV
+
+df <- as.data.frame(sample_data(old))
+t.test_old <- t.test(df$PD ~ df$HIV_Status)
+t.test_old
+
+df <- as.data.frame(sample_data(young))
+t.test_young <- t.test(df$PD ~ df$HIV_Status)
+t.test_young
+```
+
+### PERMANOVA
+
+```{r}
+#PERMANOVA, beta diversity
+samp_dat_wdiv <- data.frame(sample_data(final_week0), estimate_richness(final_week0))
+
+dm_unifrac <- UniFrac(final_week0, weighted=TRUE)
+
+# plot the above as an ordination to a PCoA plot
+ord.unifrac <- ordinate(final_week0, method="PCoA", distance="unifrac")
+
+# run the permanova on the above matrix for weighted unifrac
+?adonis2
+adonis2(dm_unifrac ~ `HIV_Status`*Visit_Age, data=samp_dat_wdiv)
+
+# re-plot the above PCoA with ellipses to show a significant difference 
+# between body sites using ggplot2
+plot_ordination(final_week0, ord.unifrac, color = "Visit_Age") +
+  stat_ellipse(type = "norm")
+```
+
+# Education vs HIV
+
+## Alpha Diversity
+
+### Education (by Education Level)
+
+```{r}
+#for HIV+ patients
+gg_richness_edu_HIV <- final_week0_HIV %>%
+  plot_richness(x = "Education_Level", measures = c("Shannon", "Chao1")) + 
+  geom_boxplot(aes(fill = Education_Level)) + 
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Education Level") +
+  ggtitle("HIV+ patients") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_edu_HIV 
+
+#for HIV- patients
+gg_richness_edu_noHIV <- final_week0_noHIV %>%
+  plot_richness(x = "Education_Level", measures = c("Shannon", "Chao1")) + 
+    stat_compare_means(method = "t.test", label = "p.signif") +
+  geom_boxplot(aes(fill = Education_Level)) + 
+  xlab("Education Level") +
+  ggtitle("HIV- patients") + 
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_edu_noHIV 
+```
+
+### Education (by HIV status)
+
+```{r}
+#for primary patients
+gg_richness_pri <- primary %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+  geom_boxplot(aes(fill = HIV_Status)) + 
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("HIV_Status") +
+  ggtitle("Primary Education") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_pri
+
+#for secondary  patients
+gg_richness_sec <- secondary %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+  geom_boxplot(aes(fill = HIV_Status)) + 
+  stat_compare_means(method = "t.test", label = "p.format") +
+  xlab("HIV_Status") +
+  ggtitle("Secondary Education") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_sec
+
+#for tertiary patients
+gg_richness_ter <- tertiary %>%
+  plot_richness(x = "HIV_Status", measures = c("Shannon", "Chao1")) + 
+  geom_boxplot(aes(fill = HIV_Status)) + 
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("HIV_Status") +
+  ggtitle("Tertiary Education") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_richness_ter
+```
+
+## Phylogenetic Diversity Calculations
+
+```{r}
+gg_faith_HIV.pd <- ggplot(sample_data(final_week0_HIV), aes(Education_Level, PD)) +
+  geom_boxplot(aes(fill = Education_Level)) +
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Education Level") +
+  ylab("Faith's PD") +
+  ggtitle("Education Level in HIV+ patients") + 
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_faith_HIV.pd
+
+##
+
+sample_data(final_week0_HIV)$PD <- phy_distance_HIV$PD
+
+gg_faith_noHIV.pd <- ggplot(sample_data(final_week0_noHIV), aes(Education_Level, PD)) +
+  geom_boxplot(aes(fill = Education_Level)) +
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("Education Level") +
+  ylab("Faith's PD") +
+  ggtitle("Education Level in HIV- patients") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_faith_noHIV.pd
+
+##
+
+phy_distance_pri <- pd(t(otu_table(primary)), phy_tree(primary),
+                 include.root=F) 
+
+sample_data(primary)$PD <- phy_distance_pri$PD
+
+gg_faith_pri.pd <- ggplot(sample_data(primary), aes(HIV_Status, PD)) +
+  geom_boxplot(aes(fill = HIV_Status)) +
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Primary patient") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_faith_pri.pd
+
+##
+
+phy_distance_sec <- pd(t(otu_table(secondary)), phy_tree(secondary),
+                 include.root=F) 
+
+sample_data(secondary)$PD <- phy_distance_sec$PD
+
+gg_faith_sec.pd <- ggplot(sample_data(secondary), aes(HIV_Status, PD)) +
+  geom_boxplot(aes(fill = HIV_Status)) +
+  stat_compare_means(method = "t.test", label = "p.format") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Secondary patients") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_faith_sec.pd
+
+##
+
+phy_distance_ter <- pd(t(otu_table(tertiary)), phy_tree(tertiary),
+                 include.root=F) 
+
+sample_data(tertiary)$PD <- phy_distance_ter$PD
+
+gg_faith_ter.pd <- ggplot(sample_data(tertiary), aes(HIV_Status, PD)) +
+  geom_boxplot(aes(fill = HIV_Status)) +
+  stat_compare_means(method = "t.test", label = "p.signif") +
+  xlab("HIV Status") +
+  ylab("Faith's PD") +
+  ggtitle("HIV Status in Tertiary patients") +
+  scale_fill_manual(values = color) +  
+  scale_color_manual(values = color)
+
+gg_faith_ter.pd
+```
+
+## Beta Diversity
+
+```{r}
+#HIV+
+bc_dm_HIV <- distance(final_week0_HIV, method="wunifrac")
+pcoa_bc_HIV <- ordinate(final_week0_HIV, method="PCoA", distance=bc_dm_HIV)
+
+gg_pcoa_HIV <- plot_ordination(final_week0_HIV, pcoa_bc_HIV, color = "Education_Level") +
+  labs(pch="Subject #", col = "Labor Type") +
+  ggtitle("HIV+ patients")
+gg_pcoa_HIV +
+  scale_color_manual(values = color)
+
+#HIV-
+bc_dm_noHIV <- distance(final_week0_noHIV, method="wunifrac")
+pcoa_bc_noHIV <- ordinate(final_week0_noHIV, method="PCoA", distance=bc_dm_noHIV)
+
+gg_pcoa_noHIV <- plot_ordination(final_week0_noHIV, pcoa_bc_noHIV, color = "Education_Level") +
+  labs(pch="Subject #", col = "Labor Type") +
+  ggtitle("HIV- patients") +
+  scale_color_manual(values = color)
+gg_pcoa_noHIV
+
+#primary
+bc_dm_pri <- distance(primary, method="wunifrac")
+pcoa_bc_pri <- ordinate(primary, method="PCoA", distance= bc_dm_pri)
+
+gg_pcoa_pri <- plot_ordination(primary, pcoa_bc_pri, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Primary Patients") +
+  scale_color_manual(values = color)
+gg_pcoa_pri
+
+#secodary
+bc_dm_sec <- distance(secondary, method="wunifrac")
+pcoa_bc_sec <- ordinate(secondary, method="PCoA", distance= bc_dm_sec)
+
+gg_pcoa_sec<- plot_ordination(secondary, pcoa_bc_sec, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Secondary Patients") +
+  scale_color_manual(values = color)
+gg_pcoa_sec
+
+#tertiary
+bc_dm_ter <- distance(tertiary, method="wunifrac")
+pcoa_bc_ter <- ordinate(tertiary, method="PCoA", distance= bc_dm_ter)
+
+gg_pcoa_ter <- plot_ordination(tertiary, pcoa_bc_ter, color = "HIV_Status") +
+  labs(pch="Subject #", col = "HIV Status") +
+  ggtitle("Tertiary Patients") +
+  scale_color_manual(values = color)
+gg_pcoa_ter
+```
+
+### Taxonomic Bar plots
+
+```{r}
+# Plot bar plot of taxonomy
+plot_bar(hiv_rare, fill="Phylum") 
+
+# Convert to relative abundance
+hiv_RA <- transform_sample_counts(hiv_rare, function(x) x/sum(x))
+
+# To remove black bars, "glom" by phylum first
+hiv_phylum <- tax_glom(hiv_RA, taxrank = "Phylum", NArm=FALSE)
+
+plot_bar(hiv_phylum, fill="Phylum") + 
+  facet_wrap(.~Education_Level, scales = "free_x")
+
+gg_taxa <- plot_bar(hiv_phylum, fill="Phylum") + 
+  facet_wrap(.~Education_Level, scales = "free_x")
+gg_taxa
+```
+
+## Statistics
+
+### Faith's Phylogenetic Diversity
+
+```{r}
+df <- as.data.frame(sample_data(final_week0_HIV))
+anova_HIV <- aov(df$PD ~ df$Education_Level)
+summary(anova_HIV)
+
+df <- as.data.frame(sample_data(final_week0_noHIV))
+anova_noHIV <- aov(df$PD ~ df$Education_Level)
+summary(anova_noHIV)
+
+df <- as.data.frame(sample_data(primary))
+t.test_primary <- t.test(df$PD ~ df$HIV_Status)
+t.test_primary
+
+df <- as.data.frame(sample_data(secondary))
+t.test_secondary <- t.test(df$PD ~ df$HIV_Status)
+t.test_secondary
+
+df <- as.data.frame(sample_data(tertiary))
+t.test_tertiary <- t.test(df$PD ~ df$HIV_Status)
+t.test_tertiary
+```
+
+### PERMANOVA
+
+```{r}
+#PERMANOVA, beta diversity
+samp_dat_wdiv <- data.frame(sample_data(final_week0), estimate_richness(final_week0))
+
+dm_unifrac <- UniFrac(final_week0, weighted=TRUE)
+
+# plot the above as an ordination to a PCoA plot
+ord.unifrac <- ordinate(final_week0, method="PCoA", distance="unifrac")
+
+# run the permanova on the above matrix for weighted unifrac
+?adonis2
+adonis2(dm_unifrac ~ `Education_Level`*HIV_Status, data=samp_dat_wdiv)
+
+# re-plot the above PCoA with ellipses to show a significant difference 
+# between body sites using ggplot2
+plot_ordination(final_week0, ord.unifrac, color = "HIV_Status") +
+  stat_ellipse(type = "norm") +
+  scale_color_manual(values = color)
+```

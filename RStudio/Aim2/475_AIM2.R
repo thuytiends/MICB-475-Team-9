@@ -148,15 +148,15 @@ library("sf")
 
 custom_colors <-  c("#abd9e9", "#2c7bb6")
 
-hiv_pos_labour_nonlabour_venn <- ggVennDiagram(hiv_lab_nolab_list_full, label_alpha = 0, label_size = 13, set_size = 13) + 
+hiv_pos_labour_nonlabour_venn <- ggVennDiagram(hiv_lab_nolab_list_full, label_alpha = 0, label_size = 20, set_size = 13) + 
   scale_fill_gradientn(colors = custom_colors) +
   guides(fill = "none")
 
-hiv_pos_young_aging_venn <- ggVennDiagram(hiv_aging_young_list_full, label_alpha = 0, label_size = 13, set_size = 5) + 
+hiv_pos_young_aging_venn <- ggVennDiagram(hiv_aging_young_list_full, label_alpha = 0, label_size = 20, set_size = 5) + 
   scale_fill_gradientn(colors = custom_colors) +
   guides(fill = "none") 
 
-hiv_pos_education_venn <- ggVennDiagram(hiv_education_full, label_alpha = 0, label_size = 13, set_size = 13) + 
+hiv_pos_education_venn <- ggVennDiagram(hiv_education_full, label_alpha = 0, label_size = 20, set_size = 13) + 
   scale_fill_gradientn(colors = custom_colors) +
   guides(fill = "none") 
 

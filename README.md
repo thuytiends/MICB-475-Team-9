@@ -36,7 +36,7 @@
 
 ## Finalized Codes
 ### QIIME2
- * [Data cleaning and processing](/QIIME2-Analysis/QIIME2-Data-Processing-Script.txt) 
+ * [Data cleaning and processing](/QIIME2-Analysis/QIIME2-Data-Processing-Script.md)
  * [Aim 3: PICRUST2 Analysis](/QIIME2-Analysis/QIIME2-Data-Processing-Script.txt) 
 ### RStudio
  * [Aim 1](/RStudio/Aim1): Alpha and beta diversity analyses
